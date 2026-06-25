@@ -5,7 +5,7 @@ import { EPayco, exposeApi } from "@pulgueta/epayco-convex";
 import { components } from "./_generated/api.js";
 import { action, query } from "./_generated/server.js";
 
-const epayco = new EPayco(components.epaycoConvex, {
+const epayco = new EPayco(components.epayco, {
 	testMode: true,
 	publicKey: process.env.EPAYCO_PUBLIC_KEY,
 	privateKey: process.env.EPAYCO_PRIVATE_KEY,
@@ -267,7 +267,7 @@ export const {
 	getCustomer,
 	listSubscriptions: listSubs,
 	getActiveSubscription: activeSub,
-} = exposeApi(components.epaycoConvex, {
+} = exposeApi(components.epayco, {
 	auth: async (ctx, _operation) => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");

@@ -9,7 +9,7 @@ const http = httpRouter();
 auth.addHttpRoutes(http);
 
 // Register ePayco webhook and response routes
-registerRoutes(http, components.epaycoConvex, {
+registerRoutes(http, components.epayco, {
 	pathPrefix: "/epayco",
 });
 

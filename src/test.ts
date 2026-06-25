@@ -5,9 +5,9 @@ import schema from "./component/schema.js";
 const modules = import.meta.glob("./component/**/*.ts");
 
 export function register(
-  t: TestConvex<SchemaDefinition<GenericSchema, boolean>>,
-  name: string = "epaycoConvex",
+	t: TestConvex<SchemaDefinition<GenericSchema, boolean>>,
+	name: string = "epayco",
 ) {
-  t.registerComponent(name, schema, modules);
+	t.registerComponent(name, schema, modules);
 }
 export default { register, schema, modules };

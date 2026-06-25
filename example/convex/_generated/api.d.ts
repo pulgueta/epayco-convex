@@ -51,5 +51,5 @@ export declare const internal: FilterApi<
 >;
 
 export declare const components: {
-	epaycoConvex: import("@pulgueta/epayco-convex/_generated/component.js").ComponentApi<"epaycoConvex">;
+	epayco: import("@pulgueta/epayco-convex/_generated/component.js").ComponentApi<"epayco">;
 };
