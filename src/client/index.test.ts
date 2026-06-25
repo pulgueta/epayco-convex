@@ -3,34 +3,45 @@ import { exposeApi } from "./index.js";
 import { anyApi, type ApiFromModules } from "convex/server";
 import { components, initConvexTest } from "./setup.test.js";
 
-export const { add, list } = exposeApi(components.epaycoConvex, {
-  auth: async (ctx, _operation) => {
-    return (await ctx.auth.getUserIdentity())?.subject ?? "anonymous";
-  },
-  baseUrl: "https://pirate.monkeyness.com",
-});
+export const { listTransactions, getCustomer, getActiveSubscription } =
+  exposeApi(components.epaycoConvex, {
+    auth: async (ctx, _operation) => {
+      return (await ctx.auth.getUserIdentity())?.subject ?? "anonymous";
+    },
+  });
 
 const testApi = (
   anyApi as unknown as ApiFromModules<{
     "index.test": {
-      add: typeof add;
-      list: typeof list;
+      listTransactions: typeof listTransactions;
+      getCustomer: typeof getCustomer;
+      getActiveSubscription: typeof getActiveSubscription;
     };
   }>
 )["index.test"];
 
 describe("client tests", () => {
-  test("should be able to use client", async () => {
+  test("should expose query functions", async () => {
     const t = initConvexTest().withIdentity({
       subject: "user1",
     });
-    const targetId = "test-subject-1";
-    await t.mutation(testApi.add, {
-      text: "My first comment",
-      targetId: targetId,
+    const transactions = await t.query(testApi.listTransactions, {});
+    expect(transactions).toEqual([]);
+  });
+
+  test("should expose getCustomer", async () => {
+    const t = initConvexTest().withIdentity({
+      subject: "user1",
     });
-    const comments = await t.query(testApi.list, { targetId });
-    expect(comments).toHaveLength(1);
-    expect(comments[0].text).toBe("My first comment");
+    const customer = await t.query(testApi.getCustomer, {});
+    expect(customer).toBeNull();
+  });
+
+  test("should expose getActiveSubscription", async () => {
+    const t = initConvexTest().withIdentity({
+      subject: "user1",
+    });
+    const sub = await t.query(testApi.getActiveSubscription, {});
+    expect(sub).toBeNull();
   });
 });
