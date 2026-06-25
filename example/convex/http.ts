@@ -1,20 +1,16 @@
 import { httpRouter } from "convex/server";
 import { registerRoutes } from "epayco-convex";
+import { auth } from "./auth";
 import { components } from "./_generated/api";
 
 const http = httpRouter();
 
-// Initialize the component
+// Register Convex Auth HTTP routes
+auth.addHttpRoutes(http);
 
-// Register HTTP routes for the component
-// This will expose a GET endpoint at /comments/last that returns the most recent comment
+// Register ePayco webhook and response routes
 registerRoutes(http, components.epaycoConvex, {
-  pathPrefix: "/comments",
+	pathPrefix: "/epayco",
 });
-
-// You can also register routes at different paths
-// epaycoConvex.registerRoutes(http, {
-//   path: "/api/comments/latest",
-// });
 
 export default http;
