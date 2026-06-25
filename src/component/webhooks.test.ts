@@ -77,30 +77,23 @@ describe("webhooks", () => {
 });
 
 describe("verifyWebhookSignature (pure function)", () => {
-  test("SHA-256 signature verification", async () => {
-    // Import the function directly for unit testing
+  const custIdCliente = "12345";
+  const pKey = "secretkey";
+  const refPayco = "ref_001";
+  const transactionId = "tx_001";
+  const amount = "50000";
+  const currency = "COP";
+
+  // Pinned, externally-computed SHA-256 of the canonical wire string
+  //   `${custId}^${pKey}^${ref}^${txId}^${amount}^${currency}`
+  // i.e. SHA256("12345^secretkey^ref_001^tx_001^50000^COP"). Hardcoding it
+  // (rather than recomputing with the implementation's own routine) means a
+  // regression in field order/separator would actually fail this test.
+  const KNOWN_GOOD_SIGNATURE =
+    "16514e8ce6f372b83a414bbb9141d3a09c213df702d91819f999c14e0d5b893b";
+
+  test("accepts the known-good signature", async () => {
     const { verifyWebhookSignature } = await import("./signature.js");
-
-    // Create a known signature
-    const custIdCliente = "12345";
-    const pKey = "secretkey";
-    const refPayco = "ref_001";
-    const transactionId = "tx_001";
-    const amount = "50000";
-    const currency = "COP";
-
-    // Compute expected signature
-    const data = `${custIdCliente}^${pKey}^${refPayco}^${transactionId}^${amount}^${currency}`;
-    const encoder = new TextEncoder();
-    const hashBuffer = await crypto.subtle.digest(
-      "SHA-256",
-      encoder.encode(data),
-    );
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const expectedSignature = hashArray
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-
     const isValid = await verifyWebhookSignature(
       custIdCliente,
       pKey,
@@ -108,11 +101,13 @@ describe("verifyWebhookSignature (pure function)", () => {
       transactionId,
       amount,
       currency,
-      expectedSignature,
+      KNOWN_GOOD_SIGNATURE,
     );
     expect(isValid).toBe(true);
+  });
 
-    // Test with wrong signature
+  test("rejects a wrong signature", async () => {
+    const { verifyWebhookSignature } = await import("./signature.js");
     const isInvalid = await verifyWebhookSignature(
       custIdCliente,
       pKey,
@@ -121,6 +116,21 @@ describe("verifyWebhookSignature (pure function)", () => {
       amount,
       currency,
       "wrong_signature",
+    );
+    expect(isInvalid).toBe(false);
+  });
+
+  test("rejects when a signed field is tampered", async () => {
+    const { verifyWebhookSignature } = await import("./signature.js");
+    // Same pinned signature, but a different amount must not validate.
+    const isInvalid = await verifyWebhookSignature(
+      custIdCliente,
+      pKey,
+      refPayco,
+      transactionId,
+      "99999",
+      currency,
+      KNOWN_GOOD_SIGNATURE,
     );
     expect(isInvalid).toBe(false);
   });

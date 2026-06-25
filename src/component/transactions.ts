@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { internalMutation, query } from "./_generated/server.js";
 import { paymentMethodValidator } from "./validators.js";
+import { statusFromCodResponse } from "./status.js";
 
 export const getLocalTransaction = query({
   args: { epaycoRef: v.string() },
@@ -95,7 +96,7 @@ export const upsertTransaction = internalMutation({
       return existing._id;
     }
 
-    return await ctx.db.insert("transactions", {
+    const insertedId = await ctx.db.insert("transactions", {
       userId: args.userId,
       epaycoRef: args.epaycoRef,
       epaycoTransactionId: args.epaycoTransactionId,
@@ -115,9 +116,61 @@ export const upsertTransaction = internalMutation({
       rawResponse: args.rawResponse,
       lastSyncedAt: args.lastSyncedAt,
     });
+
+    // Reconcile a confirmation that arrived BEFORE this row existed: an async
+    // PSE/cash/Daviplata webhook can race ahead of (or be independent of) local
+    // persistence, in which case `webhooks.processConfirmation` verified it and
+    // parked the event as `pending`. Apply it now so the status is never lost.
+    await drainPendingConfirmation(ctx, args.epaycoRef, insertedId);
+
+    return insertedId;
   },
 });
 
+/**
+ * If a verified-but-unapplied confirmation event is waiting for `epaycoRef`,
+ * apply its outcome to the (now-existing) transaction row and mark the event
+ * processed. Deterministic, so no cron/scheduler is needed; it runs whenever a
+ * transaction is first inserted. Safe no-op when nothing is waiting.
+ */
+async function drainPendingConfirmation(
+  ctx: { db: import("./_generated/server.js").MutationCtx["db"] },
+  epaycoRef: string,
+  transactionId: import("./_generated/dataModel.js").Id<"transactions">,
+): Promise<void> {
+  const event = await ctx.db
+    .query("webhookEvents")
+    .withIndex("by_epaycoRef", (q) => q.eq("epaycoRef", epaycoRef))
+    .order("desc")
+    .first();
+  if (!event || event.status !== "pending") return;
+
+  const payload = (event.rawPayload ?? {}) as Record<string, unknown>;
+  const cod = payload.x_cod_response;
+  if (cod === undefined || cod === null) return;
+
+  const reason = payload.x_response_reason_text ?? payload.x_response;
+  await ctx.db.patch(transactionId, {
+    status: statusFromCodResponse(String(cod)),
+    responseCode: String(cod),
+    responseMessage:
+      reason === undefined || reason === null ? undefined : String(reason),
+    rawResponse: payload,
+    lastSyncedAt: Date.now(),
+  });
+  await ctx.db.patch(event._id, {
+    status: "processed",
+    processedAt: Date.now(),
+    lastSyncedAt: Date.now(),
+  });
+}
+
+/**
+ * Patch the status of an existing transaction. Returns `true` when a row was
+ * found and updated, `false` when no local row exists yet — so callers (e.g. the
+ * webhook handler) can detect a confirmation that arrived before local
+ * persistence instead of silently dropping it.
+ */
 export const updateTransactionStatus = internalMutation({
   args: {
     epaycoRef: v.string(),
@@ -126,20 +179,22 @@ export const updateTransactionStatus = internalMutation({
     responseMessage: v.optional(v.string()),
     rawResponse: v.optional(v.any()),
   },
+  returns: v.boolean(),
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query("transactions")
       .withIndex("by_epaycoRef", (q) => q.eq("epaycoRef", args.epaycoRef))
       .first();
 
-    if (existing) {
-      await ctx.db.patch(existing._id, {
-        status: args.status,
-        responseCode: args.responseCode,
-        responseMessage: args.responseMessage,
-        rawResponse: args.rawResponse,
-        lastSyncedAt: Date.now(),
-      });
-    }
+    if (!existing) return false;
+
+    await ctx.db.patch(existing._id, {
+      status: args.status,
+      responseCode: args.responseCode,
+      responseMessage: args.responseMessage,
+      rawResponse: args.rawResponse,
+      lastSyncedAt: Date.now(),
+    });
+    return true;
   },
 });

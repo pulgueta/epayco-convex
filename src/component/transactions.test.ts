@@ -182,4 +182,46 @@ describe("transactions", () => {
     expect(tx!.status).toBe("approved");
     expect(tx!.responseCode).toBe("1");
   });
+
+  test("upsertTransaction drains a confirmation that arrived first", async () => {
+    const t = initConvexTest();
+    // A verified confirmation lands before the local transaction exists, so the
+    // webhook handler parked it as a pending event.
+    await t.mutation(internal.webhooks.storeWebhookEvent, {
+      epaycoRef: "ref_race",
+      eventType: "confirmation",
+      status: "pending",
+      rawPayload: {
+        x_ref_payco: "ref_race",
+        x_cod_response: "1",
+        x_response_reason_text: "Aprobada",
+      },
+      lastSyncedAt: 1000,
+    });
+
+    // The charge action now persists the transaction (initially pending).
+    await t.mutation(internal.transactions.upsertTransaction, {
+      userId: "user1",
+      epaycoRef: "ref_race",
+      paymentMethod: "pse",
+      status: "pending",
+      amount: 50000,
+      currency: "COP",
+      description: "PSE TX",
+      lastSyncedAt: 2000,
+    });
+
+    // The waiting confirmation is applied on insert, not dropped.
+    const tx = await t.query(api.transactions.getLocalTransaction, {
+      epaycoRef: "ref_race",
+    });
+    expect(tx!.status).toBe("approved");
+    expect(tx!.responseCode).toBe("1");
+    expect(tx!.responseMessage).toBe("Aprobada");
+
+    const event = await t.query(internal.webhooks.getWebhookEvent, {
+      epaycoRef: "ref_race",
+    });
+    expect(event!.status).toBe("processed");
+  });
 });
