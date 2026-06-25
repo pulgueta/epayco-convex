@@ -287,6 +287,7 @@ export class EPayco {
 	async chargeSubscription(
 		ctx: ActionCtx,
 		args: {
+			userId: string;
 			idPlan: string;
 			customer: string;
 			tokenCard: string;
@@ -460,9 +461,11 @@ export function exposeApi(
 	},
 ) {
 	return {
+		// NOTE: none of these queries accept a client-supplied `userId`. The scope
+		// is always the identity resolved by `options.auth`, so an authenticated
+		// caller can never widen access to another user's records.
 		listTransactions: queryGeneric({
 			args: {
-				userId: v.optional(v.string()),
 				status: v.optional(v.string()),
 				limit: v.optional(v.number()),
 			},
@@ -471,7 +474,7 @@ export function exposeApi(
 				return await ctx.runQuery(
 					component.transactions.listLocalTransactions,
 					{
-						userId: args.userId ?? userId,
+						userId,
 						status: args.status,
 						limit: args.limit,
 					},
@@ -481,38 +484,42 @@ export function exposeApi(
 		getTransaction: queryGeneric({
 			args: { epaycoRef: v.string() },
 			handler: async (ctx, args) => {
-				await options.auth(ctx, { type: "read" });
-				return await ctx.runQuery(component.transactions.getLocalTransaction, {
-					epaycoRef: args.epaycoRef,
-				});
+				const userId = await options.auth(ctx, { type: "read" });
+				const transaction = await ctx.runQuery(
+					component.transactions.getLocalTransaction,
+					{ epaycoRef: args.epaycoRef },
+				);
+				// Transactions carry customer PII; only return it to its owner.
+				if (!transaction || transaction.userId !== userId) return null;
+				return transaction;
 			},
 		}),
 		getCustomer: queryGeneric({
-			args: { userId: v.optional(v.string()) },
-			handler: async (ctx, args) => {
+			args: {},
+			handler: async (ctx) => {
 				const userId = await options.auth(ctx, { type: "read" });
 				return await ctx.runQuery(component.customers.getLocalCustomer, {
-					userId: args.userId ?? userId,
+					userId,
 				});
 			},
 		}),
 		listSubscriptions: queryGeneric({
-			args: { userId: v.optional(v.string()) },
-			handler: async (ctx, args) => {
+			args: {},
+			handler: async (ctx) => {
 				const userId = await options.auth(ctx, { type: "read" });
 				return await ctx.runQuery(
 					component.subscriptions.listLocalSubscriptionsByUser,
-					{ userId: args.userId ?? userId },
+					{ userId },
 				);
 			},
 		}),
 		getActiveSubscription: queryGeneric({
-			args: { userId: v.optional(v.string()) },
-			handler: async (ctx, args) => {
+			args: {},
+			handler: async (ctx) => {
 				const userId = await options.auth(ctx, { type: "read" });
 				return await ctx.runQuery(
 					component.subscriptions.getActiveSubscription,
-					{ userId: args.userId ?? userId },
+					{ userId },
 				);
 			},
 		}),
@@ -604,7 +611,20 @@ export function registerRoutes(
 				component.transactions.getLocalTransaction,
 				{ epaycoRef: refPayco },
 			);
-			return new Response(JSON.stringify(transaction), {
+			// This endpoint is public (ePayco redirects the buyer's browser here),
+			// so expose only a minimal status payload — never the full row, which
+			// holds customerEmail, responseMessage, splitReceivers and rawResponse.
+			const body = transaction
+				? {
+						found: true,
+						ref_payco: transaction.epaycoRef,
+						status: transaction.status,
+						paymentMethod: transaction.paymentMethod,
+						amount: transaction.amount,
+						currency: transaction.currency,
+					}
+				: { found: false };
+			return new Response(JSON.stringify(body), {
 				status: 200,
 				headers: { "Content-Type": "application/json" },
 			});
