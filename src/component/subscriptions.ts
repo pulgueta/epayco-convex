@@ -23,6 +23,7 @@ export const listLocalSubscriptionsByUser = query({
     const subs = await ctx.db
       .query("subscriptions")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .order("desc")
       .take(100);
     return subs.filter((s) => s.status !== "cancelled");
   },
@@ -35,8 +36,41 @@ export const getActiveSubscription = query({
     const subs = await ctx.db
       .query("subscriptions")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .order("desc")
       .take(100);
     return subs.find((s) => s.status === "active") ?? null;
+  },
+});
+
+/**
+ * Patch the status of an existing subscription only. Unlike `upsertSubscription`
+ * this never inserts, so cancelling a subscription that was never persisted
+ * locally (e.g. created out-of-band) can't create an orphan row with empty
+ * identity fields. Returns whether a row was found and updated.
+ */
+export const updateSubscriptionStatus = internalMutation({
+  args: {
+    epaycoSubscriptionId: v.string(),
+    status: v.string(),
+    lastSyncedAt: v.number(),
+  },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_epaycoSubscriptionId", (q) =>
+        q.eq("epaycoSubscriptionId", args.epaycoSubscriptionId),
+      )
+      .first();
+
+    if (!existing) return false;
+    if (existing.lastSyncedAt >= args.lastSyncedAt) return true;
+
+    await ctx.db.patch(existing._id, {
+      status: args.status,
+      lastSyncedAt: args.lastSyncedAt,
+    });
+    return true;
   },
 });
 

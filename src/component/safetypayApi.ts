@@ -6,6 +6,7 @@ import {
   safetypayInfoValidator,
 } from "./validators.js";
 import { getEpaycoClient, unwrap, dataOf, pick } from "./epaycoClient.js";
+import { rateLimiter } from "./rateLimits.js";
 
 /** Create a SafetyPay transaction (cash or online bank). */
 export const createSafetyPayPayment = action({
@@ -16,6 +17,11 @@ export const createSafetyPayPayment = action({
   },
   returns: v.any(),
   handler: async (ctx, args) => {
+    await rateLimiter.limit(ctx, "createSafetyPayPayment", {
+      key: args.userId,
+      throws: true,
+    });
+
     const info = args.safetypayInfo;
     const epayco = getEpaycoClient(args.credentials);
 

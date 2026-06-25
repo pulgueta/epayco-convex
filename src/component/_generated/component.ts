@@ -679,6 +679,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
           idPlan: string;
           ip?: string;
           tokenCard: string;
+          userId: string;
         },
         any,
         Name

@@ -7,6 +7,7 @@ import {
 } from "./validators.js";
 import { getEpaycoClient, unwrap, dataOf, pick } from "./epaycoClient.js";
 import { statusFromEstado } from "./status.js";
+import { rateLimiter } from "./rateLimits.js";
 
 /** Start a Daviplata payment. Returns a ref_payco + id_session_token used for OTP confirmation. */
 export const createDaviplataPayment = action({
@@ -17,6 +18,11 @@ export const createDaviplataPayment = action({
   },
   returns: v.any(),
   handler: async (ctx, args) => {
+    await rateLimiter.limit(ctx, "createDaviplataPayment", {
+      key: args.userId,
+      throws: true,
+    });
+
     const info = args.daviplataInfo;
     const epayco = getEpaycoClient(args.credentials);
 
@@ -46,6 +52,11 @@ export const createDaviplataPayment = action({
     );
 
     const data = dataOf(result);
+    // The OTP-confirmation session token is a short-lived secret; keep it out of
+    // the persisted transaction row (it's still returned to the caller below).
+    const safeRawResponse: Record<string, unknown> = { ...data };
+    delete safeRawResponse.id_session_token;
+    delete safeRawResponse.idSessionToken;
     const refPayco = pick(data, ["ref_payco", "refPayco"]);
 
     if (refPayco) {
@@ -59,7 +70,7 @@ export const createDaviplataPayment = action({
         currency: info.currency ?? "COP",
         description: info.description,
         customerEmail: info.email,
-        rawResponse: data,
+        rawResponse: safeRawResponse,
         lastSyncedAt: Date.now(),
       });
     }
@@ -78,6 +89,12 @@ export const confirmDaviplataPayment = action({
   },
   returns: v.any(),
   handler: async (ctx, args) => {
+    // Throttle OTP submissions per payment to limit brute-force guessing.
+    await rateLimiter.limit(ctx, "confirmDaviplataPayment", {
+      key: args.refPayco,
+      throws: true,
+    });
+
     const epayco = getEpaycoClient(args.credentials);
     const result = unwrap(
       await epayco.daviplata.confirm({
@@ -88,10 +105,13 @@ export const confirmDaviplataPayment = action({
     );
 
     const data = dataOf(result);
+    const safeRawResponse: Record<string, unknown> = { ...data };
+    delete safeRawResponse.id_session_token;
+    delete safeRawResponse.idSessionToken;
     await ctx.runMutation(internal.transactions.updateTransactionStatus, {
       epaycoRef: args.refPayco,
       status: statusFromEstado(pick(data, ["estado", "x_response", "respuesta"])),
-      rawResponse: data,
+      rawResponse: safeRawResponse,
     });
 
     return result;

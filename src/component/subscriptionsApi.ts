@@ -6,6 +6,7 @@ import {
   subscriptionInfoValidator,
 } from "./validators.js";
 import { getEpaycoClient, unwrap, dataOf, pick } from "./epaycoClient.js";
+import { statusFromEstado } from "./status.js";
 import { rateLimiter } from "./rateLimits.js";
 
 /** Create a subscription (enroll a customer in a plan). */
@@ -92,7 +93,8 @@ export const cancelSubscription = action({
       await epayco.subscriptions.cancel(args.epaycoSubscriptionId),
     );
 
-    await ctx.runMutation(internal.subscriptions.upsertSubscription, {
+    // Update-only: never insert an orphan row for a subscription we don't track.
+    await ctx.runMutation(internal.subscriptions.updateSubscriptionStatus, {
       epaycoSubscriptionId: args.epaycoSubscriptionId,
       status: "cancelled",
       lastSyncedAt: Date.now(),
@@ -106,6 +108,7 @@ export const cancelSubscription = action({
 export const chargeSubscription = action({
   args: {
     credentials: epaycoCredentialsValidator,
+    userId: v.string(),
     idPlan: v.string(),
     customer: v.string(),
     tokenCard: v.string(),
@@ -114,9 +117,14 @@ export const chargeSubscription = action({
     ip: v.optional(v.string()),
   },
   returns: v.any(),
-  handler: async (_ctx, args) => {
+  handler: async (ctx, args) => {
+    await rateLimiter.limit(ctx, "chargeSubscription", {
+      key: args.userId,
+      throws: true,
+    });
+
     const epayco = getEpaycoClient(args.credentials);
-    return unwrap(
+    const result = unwrap(
       await epayco.subscriptions.charge({
         id_plan: args.idPlan,
         customer: args.customer,
@@ -126,5 +134,39 @@ export const chargeSubscription = action({
         ...(args.ip ? { ip: args.ip } : {}),
       }),
     );
+
+    // Record the resulting charge so recurring payments appear in local history.
+    // Subscription charges settle on a card, so they're stored as credit_card.
+    const data = dataOf(result);
+    const refPayco = pick(data, ["ref_payco", "refPayco"]);
+    if (refPayco) {
+      await ctx.runMutation(internal.transactions.upsertTransaction, {
+        userId: args.userId,
+        epaycoRef: refPayco,
+        epaycoTransactionId: pick(data, [
+          "transactionId",
+          "transaction_id",
+          "x_transaction_id",
+        ]),
+        paymentMethod: "credit_card",
+        status: statusFromEstado(
+          pick(data, ["estado", "x_response", "respuesta"]),
+        ),
+        amount: Number(pick(data, ["valor", "value", "x_amount", "amount"]) ?? 0),
+        currency: pick(data, ["moneda", "currency", "x_currency_code"]) ?? "COP",
+        description: `Subscription charge for plan ${args.idPlan}`,
+        franchise: pick(data, ["franchise", "franquicia", "x_franchise"]),
+        responseCode: pick(data, ["cod_respuesta", "x_cod_response"]),
+        responseMessage: pick(data, [
+          "respuesta",
+          "x_response_reason_text",
+          "response_reason_text",
+        ]),
+        rawResponse: data,
+        lastSyncedAt: Date.now(),
+      });
+    }
+
+    return result;
   },
 });
