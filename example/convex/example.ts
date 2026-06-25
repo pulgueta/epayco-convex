@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Auth } from "convex/server";
 import { v } from "convex/values";
-import { EPayco, exposeApi } from "epayco-convex";
+import { EPayco, exposeApi } from "@pulgueta/epayco-convex";
 import { components } from "./_generated/api.js";
 import { action, query } from "./_generated/server.js";
 

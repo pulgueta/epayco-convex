@@ -13,15 +13,15 @@ import type * as example from "../example.js";
 import type * as http from "../http.js";
 
 import type {
-  ApiFromModules,
-  FilterApi,
-  FunctionReference,
+	ApiFromModules,
+	FilterApi,
+	FunctionReference,
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  auth: typeof auth;
-  example: typeof example;
-  http: typeof http;
+	auth: typeof auth;
+	example: typeof example;
+	http: typeof http;
 }>;
 
 /**
@@ -33,8 +33,8 @@ declare const fullApi: ApiFromModules<{
  * ```
  */
 export declare const api: FilterApi<
-  typeof fullApi,
-  FunctionReference<any, "public">
+	typeof fullApi,
+	FunctionReference<any, "public">
 >;
 
 /**
@@ -46,10 +46,10 @@ export declare const api: FilterApi<
  * ```
  */
 export declare const internal: FilterApi<
-  typeof fullApi,
-  FunctionReference<any, "internal">
+	typeof fullApi,
+	FunctionReference<any, "internal">
 >;
 
 export declare const components: {
-  epaycoConvex: import("epayco-convex/_generated/component.js").ComponentApi<"epaycoConvex">;
+	epaycoConvex: import("@pulgueta/epayco-convex/_generated/component.js").ComponentApi<"epaycoConvex">;
 };

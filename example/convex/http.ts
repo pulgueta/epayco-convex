@@ -1,5 +1,5 @@
 import { httpRouter } from "convex/server";
-import { registerRoutes } from "epayco-convex";
+import { registerRoutes } from "@pulgueta/epayco-convex";
 import { auth } from "./auth";
 import { components } from "./_generated/api";
 

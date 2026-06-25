@@ -36,7 +36,7 @@ Register the component in your `convex/convex.config.ts`:
 
 ```ts
 import { defineApp } from "convex/server";
-import epaycoConvex from "epayco-convex/convex.config.js";
+import epaycoConvex from "@pulgueta/epayco-convex/convex.config.js";
 
 const app = defineApp();
 app.use(epaycoConvex);
@@ -69,7 +69,7 @@ also be passed directly to the `EPayco` constructor (`publicKey`, `privateKey`,
 // convex/example.ts
 import { action, query } from "./_generated/server.js";
 import { components } from "./_generated/api.js";
-import { EPayco } from "epayco-convex";
+import { EPayco } from "@pulgueta/epayco-convex";
 
 const epayco = new EPayco(components.epaycoConvex, {
   testMode: true,
@@ -111,7 +111,7 @@ export const listTransactions = query({
 ### Using exposeApi for direct client access
 
 ```ts
-import { exposeApi } from "epayco-convex";
+import { exposeApi } from "@pulgueta/epayco-convex";
 
 export const { listTransactions, getTransaction, getCustomer } = exposeApi(
   components.epaycoConvex,
@@ -130,7 +130,7 @@ export const { listTransactions, getTransaction, getCustomer } = exposeApi(
 ```ts
 // convex/http.ts
 import { httpRouter } from "convex/server";
-import { registerRoutes } from "epayco-convex";
+import { registerRoutes } from "@pulgueta/epayco-convex";
 import { components } from "./_generated/api";
 
 const http = httpRouter();
@@ -152,7 +152,7 @@ import {
   useTransactions,
   useActiveSubscription,
   usePayment,
-} from "epayco-convex/react";
+} from "@pulgueta/epayco-convex/react";
 import { api } from "../convex/_generated/api";
 
 function PaymentDashboard() {
