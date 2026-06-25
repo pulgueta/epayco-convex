@@ -29,8 +29,11 @@ export function statusFromCodResponse(cod: string | number): TransactionStatus {
     case "6":
       return "reversed";
     case "9":
-    case "10":
+      // 9 = Expirada (expired).
       return "expired";
+    case "10":
+      // 10 = Abandonada — aligned with statusFromEstado("abandonada") => failed.
+      return "failed";
     default:
       return "pending";
   }

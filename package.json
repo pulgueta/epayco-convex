@@ -100,12 +100,6 @@
   },
   "types": "./dist/client/index.d.ts",
   "module": "./dist/client/index.js",
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "@tailwindcss/oxide"
-    ]
-  },
   "dependencies": {
     "@convex-dev/rate-limiter": "^0.3.2"
   }

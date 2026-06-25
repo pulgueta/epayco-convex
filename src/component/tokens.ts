@@ -40,13 +40,18 @@ export const upsertToken = internalMutation({
     if (existing) {
       if (existing.lastSyncedAt >= args.lastSyncedAt) return existing._id;
 
-      await ctx.db.patch(existing._id, {
+      const patch: Record<string, unknown> = {
         mask: args.mask,
         franchise: args.franchise,
         isActive: args.isActive,
-        epaycoCustomerId: args.epaycoCustomerId,
         lastSyncedAt: args.lastSyncedAt,
-      });
+      };
+      // Only link/relink the customer when a non-empty id is provided, so a
+      // later card-only sync can't wipe an existing customer association.
+      if (args.epaycoCustomerId !== "") {
+        patch.epaycoCustomerId = args.epaycoCustomerId;
+      }
+      await ctx.db.patch(existing._id, patch);
       return existing._id;
     }
 

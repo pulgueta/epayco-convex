@@ -25,6 +25,11 @@ const BASE_URL = "https://api.secure.payco.co";
 const SECURE_URL = "https://secure.payco.co";
 const APIFY_URL = "https://apify.epayco.co";
 
+/** Upper bound for any ePayco API call, so a hung host can't block the action. */
+const REQUEST_TIMEOUT_MS = 30_000;
+/** Tighter bound for the best-effort ipify lookup on the payment hot path. */
+const IP_LOOKUP_TIMEOUT_MS = 5_000;
+
 /** Base64 of a 16-byte all-zero IV (`i` for the encrypted restpagos envelope). */
 const ZERO_IV_BASE64 = "AAAAAAAAAAAAAAAAAAAAAA==";
 /** Base64 of the ASCII string "0000000000000000" (`i` for the cash envelope). */
@@ -238,9 +243,12 @@ export function getEpaycoClient(credentials: EPaycoCredentials): EpaycoClient {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          // The trailing ";" is intentional: it matches epayco-sdk-node@1.4.4
+          // (lib/resources/index.js) exactly, which the apify host expects.
           Authorization: `Basic ${basic};`,
         },
         body: JSON.stringify({}),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
       const json = (await res.json()) as Record<string, unknown>;
       return String(json.token ?? json.bearer_token ?? "");
@@ -249,6 +257,7 @@ export function getEpaycoClient(credentials: EPaycoCredentials): EpaycoClient {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ public_key: apiKey, private_key: privateKey }),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
     const json = (await res.json()) as Record<string, unknown>;
     return String(json.bearer_token ?? json.token ?? "");
@@ -317,7 +326,11 @@ export function getEpaycoClient(credentials: EPaycoCredentials): EpaycoClient {
     const url = base + path;
 
     if (method === "get") {
-      const res = await fetch(url, { method: "GET", headers });
+      const res = await fetch(url, {
+        method: "GET",
+        headers,
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
       return parseResponse(res);
     }
 
@@ -337,6 +350,7 @@ export function getEpaycoClient(credentials: EPaycoCredentials): EpaycoClient {
       method: "POST",
       headers,
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
     return parseResponse(res);
   }
@@ -466,10 +480,16 @@ async function parseResponse(res: Response): Promise<EpaycoResponse> {
   }
 }
 
-/** Best-effort server IP lookup (matches the SDK's ipify fallback). */
+/**
+ * Best-effort server IP lookup (matches the SDK's ipify fallback). Used only
+ * when the caller doesn't supply `ip`; bounded by a short timeout so the payment
+ * hot path can't stall on a slow third party, and failures fall through silently.
+ */
 async function fetchServerIp(): Promise<string | undefined> {
   try {
-    const res = await fetch("https://api.ipify.org?format=json");
+    const res = await fetch("https://api.ipify.org?format=json", {
+      signal: AbortSignal.timeout(IP_LOOKUP_TIMEOUT_MS),
+    });
     const json = (await res.json()) as { ip?: string };
     return json.ip;
   } catch {

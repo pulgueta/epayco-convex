@@ -217,10 +217,10 @@ function CreateCustomer({ tokenId }: { tokenId: string | null }) {
 				<div style={row}>
 					<input name="email" type="email" placeholder="Email" defaultValue="test@example.com" required style={input} />
 					<input name="phone" placeholder="Phone" defaultValue="3001234567" style={input} />
-					<div style={row}>
-						<input name="docType" placeholder="Doc type" defaultValue="CC" style={input} />
-						<input name="docNumber" placeholder="Doc number" defaultValue="1234567890" style={input} />
-					</div>
+				</div>
+				<div style={row}>
+					<input name="docType" placeholder="Doc type" defaultValue="CC" style={input} />
+					<input name="docNumber" placeholder="Doc number" defaultValue="1234567890" style={input} />
 				</div>
 				<button type="submit" disabled={!tokenId || loading} style={{ ...btnPrimary, opacity: !tokenId || loading ? 0.5 : 1 }}>
 					{loading ? "Creating..." : "Create Customer"}
@@ -649,12 +649,16 @@ function SubscriptionStatus() {
 	const subscription = useQuery(api.example.getActiveSubscription);
 	const cancelSub = useAction(api.example.cancelSubscription);
 	const [cancelling, setCancelling] = useState(false);
+	const [error, setError] = useState<string | null>(null);
 
 	const handleCancel = async () => {
 		if (!subscription?.epaycoSubscriptionId) return;
 		setCancelling(true);
+		setError(null);
 		try {
 			await cancelSub({ epaycoSubscriptionId: subscription.epaycoSubscriptionId });
+		} catch (err) {
+			setError(errMsg(err));
 		} finally {
 			setCancelling(false);
 		}
@@ -676,6 +680,7 @@ function SubscriptionStatus() {
 			) : (
 				<p style={{ color: "#888" }}>No active subscription.</p>
 			)}
+			{error && <p style={{ color: "#f55", fontSize: "0.85rem", marginTop: "0.5rem" }}>{error}</p>}
 		</div>
 	);
 }
