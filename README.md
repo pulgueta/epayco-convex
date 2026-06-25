@@ -1,91 +1,40 @@
-# Convex Component Template
+# epayco-convex
 
-This is a Convex component, ready to be published on npm.
+A Convex component for integrating with [ePayco](https://epayco.co), Colombia's
+payment processor. Supports credit cards, PSE bank transfers, cash payments
+(Efecty, Baloto, etc.), Daviplata, and SafetyPay.
 
-To create your own component:
+## Features
 
-1. Write code in src/component for your component. Component-specific tables,
-   queries, mutations, and actions go here.
-1. Write code in src/client for the Class that interfaces with the component.
-   This is the bridge your users will access to get information into and out of
-   your component
-1. Write example usage in example/convex/example.ts.
-1. Delete the text in this readme until `---` and flesh out the README.
-1. Publish to npm with `npm run alpha` or `npm run release`.
+- Full ePayco REST API surface: customers, tokens, plans, subscriptions, and all
+  payment methods
+- Syncs payment state to isolated Convex tables with idempotent upserts
+- Built-in rate limiting via `@convex-dev/rate-limiter`
+- Webhook handling with SHA-256 signature validation
+- Class-based client (`EPayco`) with environment variable support
+- React hooks for querying payment data
+- TypeScript-first with full type safety
 
-To develop your component run a dev process in the example project:
+## How it works
 
-```sh
-npm i
-npm run dev
-```
-
-`npm i` will do the install and an initial build. `npm run dev` will start a
-file watcher to re-build the component, as well as the example project frontend
-and backend, which does codegen and installs the component.
-
-Modify the schema and index files in src/component/ to define your component.
-
-Write a client for using this component in src/client/index.ts.
-
-If you won't be adding frontend code (e.g. React components) to this component
-you can delete "./react" references in package.json and "src/react/" directory.
-If you will be adding frontend code, add a peer dependency on React in
-package.json.
-
-### Component Directory structure
-
-```
-.
-├── README.md           documentation of your component
-├── package.json        component name, version number, other metadata
-├── package-lock.json   Components are like libraries, package-lock.json
-│                       is .gitignored and ignored by consumers.
-├── src
-│   ├── component/
-│   │   ├── _generated/ Files here are generated for the component.
-│   │   ├── convex.config.ts  Name your component here and use other components
-│   │   ├── lib.ts    Define functions here and in new files in this directory
-│   │   └── schema.ts   schema specific to this component
-│   ├── client/
-│   │   └── index.ts    Code that needs to run in the app that uses the
-│   │                   component. Generally the app interacts directly with
-│   │                   the component's exposed API (src/component/*).
-│   └── react/          Code intended to be used on the frontend goes here.
-│       │               Your are free to delete this if this component
-│       │               does not provide code.
-│       └── index.ts
-├── example/            example Convex app that uses this component
-│   └── convex/
-│       ├── _generated/       Files here are generated for the example app.
-│       ├── convex.config.ts  Imports and uses this component
-│       ├── myFunctions.ts    Functions that use the component
-│       └── schema.ts         Example app schema
-└── dist/               Publishing artifacts will be created here.
-```
-
----
-
-# Convex Epayco Convex
-
-[![npm version](https://badge.fury.io/js/@example%2Fepayco-convex.svg)](https://badge.fury.io/js/@example%2Fepayco-convex)
-
-<!-- START: Include on https://convex.dev/components -->
-
-- [ ] What is some compelling syntax as a hook?
-- [ ] Why should you use this component?
-- [ ] Links to docs / other resources?
-
-Found a bug? Feature request?
-[File it here](https://github.com/pulgueta/epayco-convex/issues).
+Convex components run only in the V8 runtime, so this component does **not**
+depend on the Node-only [`epayco-sdk-node`](https://github.com/epayco/epayco-node)
+package. Instead it reimplements ePayco's exact wire protocol natively using Web
+platform APIs (`fetch`, Web Crypto) — JWT login, AES‑128‑CBC encryption for PSE,
+Spanish/camelCase field translation, and the apify Basic‑auth flow — ported
+field‑for‑field from the official SDK. The AES output is verified byte‑identical
+to the SDK's `crypto-js` implementation in the test suite. The component runs
+fully inside Convex with no external runtime dependency.
 
 ## Installation
 
-Create a `convex.config.ts` file in your app's `convex/` folder and install the
-component by calling `use`:
+```bash
+npm install epayco-convex convex
+```
+
+Register the component in your `convex/convex.config.ts`:
 
 ```ts
-// convex/convex.config.ts
 import { defineApp } from "convex/server";
 import epaycoConvex from "epayco-convex/convex.config.js";
 
@@ -95,30 +44,91 @@ app.use(epaycoConvex);
 export default app;
 ```
 
+## Environment Variables
+
+Set these in your Convex dashboard or `.env.local`:
+
+| Variable              | Required | Description                          |
+| --------------------- | -------- | ------------------------------------ |
+| `EPAYCO_PUBLIC_KEY`        | Yes      | ePayco `PUBLIC_KEY` (API public key)             |
+| `EPAYCO_PRIVATE_KEY`       | Yes      | ePayco `PRIVATE_KEY` (API private key)           |
+| `EPAYCO_P_CUST_ID_CLIENTE` | Webhooks | ePayco `P_CUST_ID_CLIENTE` for signature checks  |
+| `EPAYCO_P_KEY`             | Webhooks | ePayco `P_KEY` for signature checks              |
+| `EPAYCO_TEST_MODE`         | No       | `"true"` for sandbox mode                        |
+| `EPAYCO_LANG`              | No       | `"ES"` (default) or `"EN"`                       |
+
+These names map 1:1 to the fields shown in the ePayco dashboard. Credentials may
+also be passed directly to the `EPayco` constructor (`publicKey`, `privateKey`,
+`testMode`, `lang`), which takes precedence over the environment.
+
 ## Usage
 
-```ts
-import { components } from "./_generated/api";
+### Using the EPayco class
 
-export const addComment = mutation({
-  args: { text: v.string(), targetId: v.string() },
+```ts
+// convex/example.ts
+import { action, query } from "./_generated/server.js";
+import { components } from "./_generated/api.js";
+import { EPayco } from "epayco-convex";
+
+const epayco = new EPayco(components.epaycoConvex, {
+  testMode: true,
+});
+
+export const createCustomer = action({
+  args: { tokenCard: v.string(), name: v.string(), email: v.string() },
   handler: async (ctx, args) => {
-    return await ctx.runMutation(components.epaycoConvex.lib.add, {
-      text: args.text,
-      targetId: args.targetId,
-      userId: await getAuthUserId(ctx),
+    const userId = "user123";
+    return await epayco.createCustomer(ctx, {
+      userId,
+      customerInfo: {
+        tokenCard: args.tokenCard,
+        name: args.name,
+        email: args.email,
+      },
     });
+  },
+});
+
+export const chargeCreditCard = action({
+  args: { /* charge fields */ },
+  handler: async (ctx, args) => {
+    return await epayco.chargeCreditCard(ctx, {
+      userId: "user123",
+      chargeInfo: args,
+    });
+  },
+});
+
+export const listTransactions = query({
+  args: {},
+  handler: async (ctx) => {
+    return await epayco.listTransactions(ctx, { userId: "user123" });
   },
 });
 ```
 
-See more example usage in [example.ts](./example/convex/example.ts).
-
-### HTTP Routes
-
-You can register HTTP routes for the component to expose HTTP endpoints:
+### Using exposeApi for direct client access
 
 ```ts
+import { exposeApi } from "epayco-convex";
+
+export const { listTransactions, getTransaction, getCustomer } = exposeApi(
+  components.epaycoConvex,
+  {
+    auth: async (ctx, operation) => {
+      const identity = await ctx.auth.getUserIdentity();
+      if (!identity) throw new Error("Unauthorized");
+      return identity.subject;
+    },
+  },
+);
+```
+
+### Webhook setup
+
+```ts
+// convex/http.ts
 import { httpRouter } from "convex/server";
 import { registerRoutes } from "epayco-convex";
 import { components } from "./_generated/api";
@@ -126,21 +136,121 @@ import { components } from "./_generated/api";
 const http = httpRouter();
 
 registerRoutes(http, components.epaycoConvex, {
-  pathPrefix: "/comments",
+  pathPrefix: "/epayco",
 });
 
 export default http;
 ```
 
-This will expose a GET endpoint that returns the most recent comment as JSON.
-The endpoint requires a `targetId` query parameter. See
-[http.ts](./example/convex/http.ts) for a complete example.
+Configure your ePayco dashboard to send confirmations to:
+`https://YOUR_DEPLOYMENT.convex.site/epayco/confirmation`
 
-<!-- END: Include on https://convex.dev/components -->
+### React hooks
 
-Run the example:
+```tsx
+import {
+  useTransactions,
+  useActiveSubscription,
+  usePayment,
+} from "epayco-convex/react";
+import { api } from "../convex/_generated/api";
 
-```sh
-npm i
-npm run dev
+function PaymentDashboard() {
+  const transactions = useTransactions(api.example.listTransactions, {});
+  const subscription = useActiveSubscription(
+    api.example.getActiveSubscription,
+    {},
+  );
+
+  return (
+    <div>
+      <h2>Transactions: {transactions?.length ?? 0}</h2>
+      <h2>
+        Subscription: {subscription?.status ?? "none"}
+      </h2>
+    </div>
+  );
+}
 ```
+
+## API Reference
+
+### Payment Methods
+
+| Method                              | Description                |
+| ----------------------------------- | -------------------------- |
+| `epayco.chargeCreditCard(ctx, args)`| Credit card charge         |
+| `epayco.createPseTransaction(ctx, args)` | PSE bank transfer    |
+| `epayco.createCashPayment(ctx, args)` | Cash (Efecty, Baloto, etc.) |
+| `epayco.createDaviplataPayment(ctx, args)` | Daviplata payment |
+| `epayco.confirmDaviplataPayment(ctx, args)` | Confirm with OTP |
+| `epayco.createSafetyPayPayment(ctx, args)` | SafetyPay         |
+
+### Customer & Token Management
+
+| Method                              | Description                |
+| ----------------------------------- | -------------------------- |
+| `epayco.createCustomer(ctx, args)`  | Create ePayco customer     |
+| `epayco.getCustomer(ctx, args)`     | Fetch from ePayco API      |
+| `epayco.updateCustomer(ctx, args)`  | Update customer details    |
+| `epayco.createToken(ctx, args)`     | Tokenize a card            |
+| `epayco.getLocalCustomer(ctx, args)`| Read from local DB         |
+| `epayco.getLocalTokens(ctx, args)`  | Read tokens from local DB  |
+
+### Plans & Subscriptions
+
+| Method                                  | Description             |
+| --------------------------------------- | ----------------------- |
+| `epayco.createPlan(ctx, args)`          | Create billing plan     |
+| `epayco.createSubscription(ctx, args)`  | Subscribe customer      |
+| `epayco.cancelSubscription(ctx, args)`  | Cancel subscription     |
+| `epayco.chargeSubscription(ctx, args)`  | Immediate charge        |
+| `epayco.getActiveSubscription(ctx, args)` | Current active sub   |
+
+### Queries
+
+| Method                                | Description                 |
+| ------------------------------------- | --------------------------- |
+| `epayco.getTransaction(ctx, args)`    | Get transaction by ref (local) |
+| `epayco.listTransactions(ctx, args)`  | List with filters (local)   |
+| `epayco.listSubscriptions(ctx, args)` | List non-cancelled subs (local) |
+| `epayco.getBanks(ctx)`                | Fetch + cache PSE bank list |
+| `epayco.listLocalBanks(ctx)`          | Read cached PSE banks       |
+
+> Note: `createPlan`/`createSubscription` require the recurring-payments feature
+> to be enabled on your ePayco merchant account; otherwise ePayco rejects the
+> request (surfaced as a `ConvexError`). The ePayco PSE **sandbox** is also
+> disabled server-side, so `createPseTransaction` only succeeds in production.
+
+## Database Tables
+
+The component manages 7 isolated tables:
+
+- `customers` - Synced ePayco customers
+- `tokens` - Tokenized card references (never raw card data)
+- `transactions` - All payment transactions across all methods
+- `plans` - Recurring billing plans
+- `subscriptions` - Customer-plan associations
+- `banks` - Cached PSE bank list
+- `webhookEvents` - Webhook audit trail with idempotency
+
+## Rate Limits
+
+Built-in rate limiting prevents abuse:
+
+- Customer/subscription creation: 5/min
+- Charges/payments: 10/min
+- Webhook processing: 200/min (fixed window)
+
+## Testing
+
+```bash
+pnpm test
+```
+
+Tests use `convex-test` for isolated component testing. See
+`src/component/*.test.ts` for examples.
+
+## License
+
+Apache-2.0
