@@ -13,3 +13,7 @@ node_modules
 # npm pack output
 *.tgz
 *.tsbuildinfo
+
+# Local agent tooling
+.claude/
+.agents/

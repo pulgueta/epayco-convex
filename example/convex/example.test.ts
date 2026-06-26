@@ -11,16 +11,21 @@ describe("example", () => {
     vi.useRealTimers();
   });
 
-  test("addComment and listComments", async () => {
+  test("getLocalCustomer returns null for unknown user", async () => {
     const t = initConvexTest();
-    const targetId = "test-subject-1";
-    const commentId = await t.mutation(api.example.addComment, {
-      text: "My comment",
-      targetId,
-    });
-    expect(commentId).toBeDefined();
-    const comments = await t.query(api.example.listComments, { targetId });
-    expect(comments).toHaveLength(1);
-    expect(comments[0].text).toBe("My comment");
+    const customer = await t.query(api.example.getLocalCustomer, {});
+    expect(customer).toBeNull();
+  });
+
+  test("listTransactions returns empty for unknown user", async () => {
+    const t = initConvexTest();
+    const transactions = await t.query(api.example.listTransactions, {});
+    expect(transactions).toEqual([]);
+  });
+
+  test("getActiveSubscription returns null for unknown user", async () => {
+    const t = initConvexTest();
+    const sub = await t.query(api.example.getActiveSubscription, {});
+    expect(sub).toBeNull();
   });
 });
