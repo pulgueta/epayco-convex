@@ -15,7 +15,6 @@ import type * as catalog from "../catalog.js";
 import type * as epayco from "../epayco.js";
 import type * as http from "../http.js";
 import type * as payments from "../payments.js";
-import type * as savedCards from "../savedCards.js";
 import type * as subscriptions from "../subscriptions.js";
 
 import type {
@@ -32,7 +31,6 @@ declare const fullApi: ApiFromModules<{
   epayco: typeof epayco;
   http: typeof http;
   payments: typeof payments;
-  savedCards: typeof savedCards;
   subscriptions: typeof subscriptions;
 }>;
 

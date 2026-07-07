@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { exposeApi } from "@pulgueta/epayco-convex";
 import { v } from "convex/values";
-import { components, internal } from "./_generated/api";
+import { components } from "./_generated/api";
 import { query } from "./_generated/server";
 import { epayco } from "./epayco";
 
@@ -52,21 +52,16 @@ export const getLocalTokens = query({
   handler: async (ctx): Promise<RedactedToken[]> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
-    const [componentTokens, savedCards]: [TokenRow[], TokenRow[]] =
-      await Promise.all([
-        epayco.getLocalTokens(ctx, { userId }),
-        ctx.runQuery(internal.savedCards.listForUser, { userId }),
-      ]);
+    const componentTokens: TokenRow[] = await epayco.getLocalTokens(ctx, {
+      userId,
+    });
 
-    const redact = (card: TokenRow, source: "component" | "app") => ({
-      _id: `${source}:${card._id}`,
+    const redact = (card: TokenRow) => ({
+      _id: `component:${card._id}`,
       mask: card.mask,
       franchise: card.franchise,
     });
 
-    return [
-      ...componentTokens.map((card) => redact(card, "component")),
-      ...savedCards.map((card) => redact(card, "app")),
-    ];
+    return componentTokens.map((card) => redact(card));
   },
 });

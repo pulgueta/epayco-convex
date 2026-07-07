@@ -26,7 +26,7 @@ export type Billing = {
 
 export type PaymentPayload = {
   savedTokenId?: string;
-  cardToken?: { tokenId: string; mask: string; franchise: string };
+  card?: { cardNumber: string; expMonth: string; expYear: string; cvc: string };
   billing: Billing;
 };
 
@@ -47,183 +47,6 @@ const TEST_CARD = {
   cvc: "123",
 };
 
-type EPaycoGlobal = {
-  setPublicKey: (publicKey: string) => void;
-  token: {
-    create: (
-      form: HTMLFormElement,
-      callback: (error: unknown, token: unknown) => void,
-    ) => void;
-  };
-};
-
-declare global {
-  interface Window {
-    ePayco?: EPaycoGlobal;
-    jQuery?: unknown;
-    $?: unknown;
-  }
-}
-
-let epaycoScriptPromise: Promise<void> | null = null;
-let jqueryScriptPromise: Promise<void> | null = null;
-
-function loadScript(src: string, errorMessage: string) {
-  const existing = document.querySelector<HTMLScriptElement>(
-    `script[src="${src}"]`,
-  );
-  if (existing) {
-    return new Promise<void>((resolve, reject) => {
-      if (existing.dataset.loaded === "true") {
-        resolve();
-        return;
-      }
-      existing.addEventListener("load", () => resolve(), { once: true });
-      existing.addEventListener(
-        "error",
-        () => reject(new Error(errorMessage)),
-        {
-          once: true,
-        },
-      );
-    });
-  }
-
-  return new Promise<void>((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = src;
-    script.async = true;
-    script.onload = () => {
-      script.dataset.loaded = "true";
-      resolve();
-    };
-    script.onerror = () => reject(new Error(errorMessage));
-    document.head.append(script);
-  });
-}
-
-function loadJqueryScript() {
-  if (window.jQuery && window.$) return Promise.resolve();
-  jqueryScriptPromise ??= loadScript(
-    "https://code.jquery.com/jquery-3.7.1.min.js",
-    "jQuery failed to load.",
-  );
-  return jqueryScriptPromise;
-}
-
-async function loadEpaycoScript() {
-  await loadJqueryScript();
-  if (window.ePayco) return;
-  epaycoScriptPromise ??= loadScript(
-    "https://checkout.epayco.co/epayco.min.js",
-    "ePayco.js failed to load.",
-  );
-  return epaycoScriptPromise;
-}
-
-function tokenFromResponse(token: unknown) {
-  if (typeof token === "string") return token;
-  if (!token || typeof token !== "object") return null;
-  const data = token as Record<string, unknown>;
-  const nested =
-    data.data && typeof data.data === "object"
-      ? (data.data as Record<string, unknown>)
-      : {};
-  const value =
-    data.epaycoToken ??
-    data.token ??
-    data.id ??
-    nested.epaycoToken ??
-    nested.token ??
-    nested.id;
-  return value ? String(value) : null;
-}
-
-function epaycoErrorMessage(error: unknown) {
-  if (!error || typeof error !== "object")
-    return "Could not tokenize that card.";
-  const data = error as Record<string, unknown>;
-  const nested =
-    data.data && typeof data.data === "object"
-      ? (data.data as Record<string, unknown>)
-      : {};
-  return String(
-    nested.description ??
-      nested.message ??
-      data.description ??
-      data.message ??
-      "Could not tokenize that card.",
-  );
-}
-
-function detectFranchise(cardNumber: string) {
-  if (cardNumber.startsWith("4")) return "visa";
-  if (/^5[1-5]/.test(cardNumber) || /^2[2-7]/.test(cardNumber)) {
-    return "mastercard";
-  }
-  if (/^3[47]/.test(cardNumber)) return "amex";
-  return "card";
-}
-
-async function tokenizeCard({
-  publicKey,
-  card,
-  billing,
-}: {
-  publicKey: string;
-  card: typeof TEST_CARD;
-  billing: Billing;
-}) {
-  await loadEpaycoScript();
-  if (!window.ePayco) throw new Error("ePayco.js is not available.");
-
-  window.ePayco.setPublicKey(publicKey);
-
-  const form = document.createElement("form");
-  form.hidden = true;
-  const fields: Record<string, string> = {
-    "card[name]": `${billing.name} ${billing.lastName}`.trim(),
-    "card[email]": billing.email,
-    "card[number]": card.cardNumber,
-    "card[cvc]": card.cvc,
-    "card[exp_month]": card.expMonth,
-    "card[exp_year]": card.expYear,
-  };
-  for (const [key, value] of Object.entries(fields)) {
-    const input = document.createElement("input");
-    input.type = "hidden";
-    input.dataset.epayco = key;
-    input.value = value;
-    form.append(input);
-  }
-  document.body.append(form);
-
-  try {
-    const tokenId = await new Promise<string>((resolve, reject) => {
-      window.ePayco!.token.create(form, (error, token) => {
-        if (error) {
-          reject(new Error(epaycoErrorMessage(error)));
-          return;
-        }
-        const id = tokenFromResponse(token);
-        if (!id) {
-          reject(new Error("ePayco did not return a card token."));
-          return;
-        }
-        resolve(id);
-      });
-    });
-    const last4 = card.cardNumber.slice(-4);
-    return {
-      tokenId,
-      mask: `****${last4}`,
-      franchise: detectFranchise(card.cardNumber),
-    };
-  } finally {
-    form.remove();
-  }
-}
-
 export function PaymentPanel({
   submitLabel,
   pending,
@@ -239,9 +62,6 @@ export function PaymentPanel({
     | SavedCard[]
     | undefined;
   const me = useQuery(api.account.getMe) as Me | undefined;
-  const publicConfig = useQuery(api.payments.getPublicConfig) as
-    | { publicKey: string; testMode: boolean }
-    | undefined;
   const savedCardsLoading = savedCards === undefined;
   const hasSaved = !!savedCards && savedCards.length > 0;
 
@@ -314,19 +134,12 @@ export function PaymentPanel({
       setLocalError("Enter complete card details.");
       return;
     }
-    if (!publicConfig?.publicKey) {
-      setLocalError("ePayco public key is not configured.");
-      return;
-    }
-
     setSubmitting(true);
     try {
-      const cardToken = await tokenizeCard({
-        publicKey: publicConfig.publicKey,
+      await onPay({
         card: { ...card, cardNumber },
         billing: finalBilling,
       });
-      await onPay({ cardToken, billing: finalBilling });
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : "Payment failed.");
     } finally {
@@ -446,8 +259,8 @@ export function PaymentPanel({
             </div>
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <ShieldCheck className="size-3.5" />
-              Sandbox test card pre-filled — browser tokenized by ePayco before
-              the server receives the payment request.
+              Sandbox test card pre-filled — forwarded to ePayco for
+              tokenization and never stored by this server.
             </p>
           </div>
         ) : null}

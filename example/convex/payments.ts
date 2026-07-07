@@ -4,7 +4,7 @@ import { epayco, requireUser } from "./epayco";
 import { cartLineValidator, priceItems, type CartLine } from "./catalog";
 import {
   billingValidator,
-  cardTokenValidator,
+  cardValidator,
   invoiceNumber,
   refOf,
   resolveCardAndCustomer,
@@ -55,20 +55,11 @@ export const listSplitPartners = query({
   handler: async () => SPLIT_PARTNERS,
 });
 
-export const getPublicConfig = query({
-  args: {},
-  returns: v.any(),
-  handler: async () => ({
-    publicKey: process.env.EPAYCO_PUBLIC_KEY ?? "",
-    testMode: process.env.EPAYCO_TEST_MODE !== "false",
-  }),
-});
-
 // --- Saved cards -------------------------------------------------------------
 
 /** Tokenize a card and link it to the user's ePayco customer, without charging. */
 export const saveCard = action({
-  args: { cardToken: cardTokenValidator, billing: billingValidator },
+  args: { card: cardValidator, billing: billingValidator },
   returns: v.any(),
   handler: async (ctx, args) => {
     const userId = await requireUser(ctx);
@@ -77,7 +68,7 @@ export const saveCard = action({
       userId,
       args.billing,
       {
-        cardToken: args.cardToken,
+        card: args.card,
       },
     );
     return { tokenCard };
@@ -90,7 +81,7 @@ export const payWithCard = action({
   args: {
     items: v.array(cartLineValidator),
     billing: billingValidator,
-    cardToken: v.optional(cardTokenValidator),
+    card: v.optional(cardValidator),
     savedTokenId: v.optional(v.string()),
   },
   returns: v.any(),
@@ -101,7 +92,7 @@ export const payWithCard = action({
       ctx,
       userId,
       args.billing,
-      { cardToken: args.cardToken, savedTokenId: args.savedTokenId },
+      { card: args.card, savedTokenId: args.savedTokenId },
     );
 
     const result = await epayco.chargeCreditCard(ctx, {
@@ -134,7 +125,7 @@ export const payWithSplit = action({
   args: {
     items: v.array(cartLineValidator),
     billing: billingValidator,
-    cardToken: v.optional(cardTokenValidator),
+    card: v.optional(cardValidator),
     savedTokenId: v.optional(v.string()),
   },
   returns: v.any(),
@@ -145,7 +136,7 @@ export const payWithSplit = action({
       ctx,
       userId,
       args.billing,
-      { cardToken: args.cardToken, savedTokenId: args.savedTokenId },
+      { card: args.card, savedTokenId: args.savedTokenId },
     );
 
     // Split the trusted total across partners by percentage. The last partner

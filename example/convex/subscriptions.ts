@@ -5,7 +5,7 @@ import { action, query } from "./_generated/server";
 import { epayco, requireUser } from "./epayco";
 import {
   billingValidator,
-  cardTokenValidator,
+  cardValidator,
   resolveCardAndCustomer,
 } from "./cards";
 
@@ -128,7 +128,7 @@ export const subscribe = action({
   args: {
     planId: v.string(),
     billing: billingValidator,
-    cardToken: v.optional(cardTokenValidator),
+    card: v.optional(cardValidator),
     savedTokenId: v.optional(v.string()),
   },
   returns: v.any(),
@@ -151,7 +151,7 @@ export const subscribe = action({
       ctx,
       userId,
       args.billing,
-      { cardToken: args.cardToken, savedTokenId: args.savedTokenId },
+      { card: args.card, savedTokenId: args.savedTokenId },
     );
 
     const result = await epayco.createSubscription(ctx, {

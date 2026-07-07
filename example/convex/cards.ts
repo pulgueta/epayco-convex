@@ -1,13 +1,11 @@
 import { ConvexError, v } from "convex/values";
 import type { ActionCtx } from "./_generated/server";
-import type { Id } from "./_generated/dataModel";
-import { internal } from "./_generated/api";
 import { epayco } from "./epayco";
 
 /**
  * Shared card/customer plumbing used by both one-time checkout and recurring
- * subscriptions. A user maps to a single ePayco customer; the server receives
- * browser-created ePayco tokens, never raw PAN/CVC values.
+ * subscriptions. A user maps to a single ePayco customer; cards are tokenized
+ * by ePayco through the server-side component and never stored by this app.
  */
 
 export const billingValidator = v.object({
@@ -19,10 +17,11 @@ export const billingValidator = v.object({
   cellPhone: v.optional(v.string()),
 });
 
-export const cardTokenValidator = v.object({
-  tokenId: v.string(),
-  mask: v.string(),
-  franchise: v.string(),
+export const cardValidator = v.object({
+  cardNumber: v.string(),
+  expMonth: v.string(),
+  expYear: v.string(),
+  cvc: v.string(),
 });
 
 export type Billing = {
@@ -34,22 +33,36 @@ export type Billing = {
   cellPhone?: string;
 };
 
-export type CardTokenInput = {
-  tokenId: string;
-  mask: string;
-  franchise: string;
+export type CardInput = {
+  cardNumber: string;
+  expMonth: string;
+  expYear: string;
+  cvc: string;
 };
+
+/** Pull the ePayco token id straight out of the `createToken` response, the
+ *  same way the component does — never infer "the newest token" by recency. */
+function tokenIdOf(result: unknown): string | null {
+  if (!result || typeof result !== "object") return null;
+  const root = result as Record<string, unknown>;
+  const data =
+    root.data && typeof root.data === "object"
+      ? (root.data as Record<string, unknown>)
+      : root;
+  const id = data.id ?? data.token ?? data.tokenId ?? root.id ?? root.token;
+  return id ? String(id) : null;
+}
 
 /**
  * Resolve a `{ tokenCard, customerId }` pair to charge against. Either reuse a
- * saved card (`savedTokenId`) or attach a browser-tokenized new card, creating
- * the ePayco customer on first use.
+ * saved card (`savedTokenId`) or tokenize the supplied `card`, creating the
+ * ePayco customer on first use and attaching the new token to it afterwards.
  */
 export async function resolveCardAndCustomer(
   ctx: ActionCtx,
   userId: string,
   billing: Billing,
-  opts: { cardToken?: CardTokenInput; savedTokenId?: string },
+  opts: { card?: CardInput; savedTokenId?: string },
 ): Promise<{ tokenCard: string; customerId: string }> {
   const customer = await epayco.getLocalCustomer(ctx, { userId });
 
@@ -59,23 +72,6 @@ export async function resolveCardAndCustomer(
         message: "No saved profile found for this card.",
       });
     }
-    if (opts.savedTokenId.startsWith("app:")) {
-      const savedCardId = opts.savedTokenId.slice(4) as Id<"savedCards">;
-      const savedCard = await ctx.runQuery(internal.savedCards.getForUser, {
-        userId: userId as Id<"users">,
-        savedCardId,
-      });
-      if (!savedCard) {
-        throw new ConvexError({
-          message: "That saved card is no longer available.",
-        });
-      }
-      return {
-        tokenCard: savedCard.epaycoTokenId,
-        customerId: savedCard.epaycoCustomerId,
-      };
-    }
-
     const componentTokenId = opts.savedTokenId.startsWith("component:")
       ? opts.savedTokenId.slice("component:".length)
       : opts.savedTokenId;
@@ -95,26 +91,29 @@ export async function resolveCardAndCustomer(
     };
   }
 
-  if (!opts.cardToken) {
+  if (!opts.card) {
     throw new ConvexError({
       message: "Provide card details or pick a saved card.",
     });
   }
 
-  const tokenCard = opts.cardToken.tokenId;
+  // Use the exact token returned by this call — not whichever token is newest.
+  const tokenResult = await epayco.createToken(ctx, {
+    userId,
+    tokenInfo: opts.card,
+  });
+  const tokenCard = tokenIdOf(tokenResult);
+  if (!tokenCard) {
+    throw new ConvexError({
+      message: "Could not tokenize that card. Check the details.",
+    });
+  }
 
   if (customer) {
     try {
       await epayco.addNewToken(ctx, {
         customerId: customer.epaycoCustomerId,
         tokenCard,
-      });
-      await ctx.runMutation(internal.savedCards.upsert, {
-        userId: userId as Id<"users">,
-        epaycoTokenId: tokenCard,
-        epaycoCustomerId: customer.epaycoCustomerId,
-        mask: opts.cardToken.mask,
-        franchise: opts.cardToken.franchise,
       });
     } catch {
       // Non-fatal: the charge passes token_card + customer_id explicitly.
@@ -140,13 +139,6 @@ export async function resolveCardAndCustomer(
       message: "Could not create your payment profile.",
     });
   }
-  await ctx.runMutation(internal.savedCards.upsert, {
-    userId: userId as Id<"users">,
-    epaycoTokenId: tokenCard,
-    epaycoCustomerId: created.epaycoCustomerId,
-    mask: opts.cardToken.mask,
-    franchise: opts.cardToken.franchise,
-  });
   return { tokenCard, customerId: created.epaycoCustomerId };
 }
 

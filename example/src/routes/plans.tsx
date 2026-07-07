@@ -227,7 +227,7 @@ function SubscribeSheet({
       await execute({
         planId: plan.id,
         billing: payload.billing,
-        cardToken: payload.cardToken,
+        card: payload.card,
         savedTokenId: payload.savedTokenId,
       });
       toast.success("Welcome to the Coffee Club!", {

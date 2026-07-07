@@ -48,7 +48,7 @@ function Checkout() {
       const result = (await execute({
         items,
         billing: payload.billing,
-        cardToken: payload.cardToken,
+        card: payload.card,
         savedTokenId: payload.savedTokenId,
       })) as { refPayco: string | null; status: string } | null;
 
@@ -72,8 +72,7 @@ function Checkout() {
         Checkout
       </h1>
       <p className="mt-1 text-muted-foreground">
-        Card payments are browser-tokenized and charged through the ePayco
-        sandbox.
+        Card payments are tokenized and charged through the ePayco sandbox.
       </p>
 
       <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-start">
@@ -86,8 +85,8 @@ function Checkout() {
           />
           <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
             <ShieldCheck className="size-3.5" />
-            Card details are tokenized by ePayco before the server receives the
-            payment request.
+            Card details are forwarded to ePayco for tokenization and never
+            stored on this server.
           </p>
         </div>
 

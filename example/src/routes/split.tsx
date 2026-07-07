@@ -74,7 +74,7 @@ function SplitRoute() {
       const result = (await execute({
         items: BOX_ITEMS,
         billing: payload.billing,
-        cardToken: payload.cardToken,
+        card: payload.card,
         savedTokenId: payload.savedTokenId,
       })) as { refPayco: string | null } | null;
       const ref = result?.refPayco;
