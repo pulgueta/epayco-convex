@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { exposeApi } from "@pulgueta/epayco-convex";
 import { v } from "convex/values";
-import { components } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import { query } from "./_generated/server";
 import { epayco } from "./epayco";
 
@@ -16,39 +16,57 @@ import { epayco } from "./epayco";
  */
 
 export const {
-	getCustomer,
-	getTransaction,
-	listTransactions,
-	listSubscriptions,
-	getActiveSubscription,
+  getCustomer,
+  getTransaction,
+  listTransactions,
+  listSubscriptions,
+  getActiveSubscription,
 } = exposeApi(components.epayco, {
-	auth: async (ctx) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("You must be signed in to do that.");
-		return userId;
-	},
+  auth: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("You must be signed in to do that.");
+    return userId;
+  },
 });
 
 /** The signed-in user's profile, used to pre-fill checkout. */
 export const getMe = query({
-	args: {},
-	returns: v.any(),
-	handler: async (ctx) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) return null;
-		const user = await ctx.db.get(userId);
-		if (!user) return null;
-		return { email: user.email ?? null, name: user.name ?? null };
-	},
+  args: {},
+  returns: v.any(),
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    const user = await ctx.db.get(userId);
+    if (!user) return null;
+    return { email: user.email ?? null, name: user.name ?? null };
+  },
 });
+
+type TokenRow = { _id: string; mask: string; franchise: string };
+type RedactedToken = { _id: string; mask: string; franchise: string };
 
 /** Saved cards (tokens) for the signed-in user. */
 export const getLocalTokens = query({
-	args: {},
-	returns: v.any(),
-	handler: async (ctx) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) return [];
-		return await epayco.getLocalTokens(ctx, { userId });
-	},
+  args: {},
+  returns: v.any(),
+  handler: async (ctx): Promise<RedactedToken[]> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+    const [componentTokens, savedCards]: [TokenRow[], TokenRow[]] =
+      await Promise.all([
+        epayco.getLocalTokens(ctx, { userId }),
+        ctx.runQuery(internal.savedCards.listForUser, { userId }),
+      ]);
+
+    const redact = (card: TokenRow, source: "component" | "app") => ({
+      _id: `${source}:${card._id}`,
+      mask: card.mask,
+      franchise: card.franchise,
+    });
+
+    return [
+      ...componentTokens.map((card) => redact(card, "component")),
+      ...savedCards.map((card) => redact(card, "app")),
+    ];
+  },
 });
