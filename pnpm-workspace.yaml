@@ -1,3 +1,12 @@
+packages:
+  - example
+
 allowBuilds:
+  '@tailwindcss/oxide': true
   esbuild: true
-  "@tailwindcss/oxide": true
+  lightningcss: true
+
+onlyBuiltDependencies:
+  - esbuild
+  - "@tailwindcss/oxide"
+  - lightningcss
