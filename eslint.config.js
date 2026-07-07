@@ -87,4 +87,13 @@ export default [
       ],
     },
   },
+  // TanStack Router file-based routes co-export `Route` alongside the route
+  // component (and co-located route helpers), which the react-refresh rule
+  // can't model. Disable it just for the route files.
+  {
+    files: ["example/src/routes/**/*.{ts,tsx}"],
+    rules: {
+      "react-refresh/only-export-components": "off",
+    },
+  },
 ];

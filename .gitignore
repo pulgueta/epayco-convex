@@ -17,3 +17,7 @@ node_modules
 # Local agent tooling
 .claude/
 .agents/
+
+# Browser-automation / review artifacts
+.playwright-mcp/
+/tostado-*.png

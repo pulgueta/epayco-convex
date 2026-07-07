@@ -8,20 +8,30 @@
  * @module
  */
 
+import type * as account from "../account.js";
 import type * as auth from "../auth.js";
-import type * as example from "../example.js";
+import type * as cards from "../cards.js";
+import type * as catalog from "../catalog.js";
+import type * as epayco from "../epayco.js";
 import type * as http from "../http.js";
+import type * as payments from "../payments.js";
+import type * as subscriptions from "../subscriptions.js";
 
 import type {
-	ApiFromModules,
-	FilterApi,
-	FunctionReference,
+  ApiFromModules,
+  FilterApi,
+  FunctionReference,
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-	auth: typeof auth;
-	example: typeof example;
-	http: typeof http;
+  account: typeof account;
+  auth: typeof auth;
+  cards: typeof cards;
+  catalog: typeof catalog;
+  epayco: typeof epayco;
+  http: typeof http;
+  payments: typeof payments;
+  subscriptions: typeof subscriptions;
 }>;
 
 /**
@@ -33,8 +43,8 @@ declare const fullApi: ApiFromModules<{
  * ```
  */
 export declare const api: FilterApi<
-	typeof fullApi,
-	FunctionReference<any, "public">
+  typeof fullApi,
+  FunctionReference<any, "public">
 >;
 
 /**
@@ -46,10 +56,10 @@ export declare const api: FilterApi<
  * ```
  */
 export declare const internal: FilterApi<
-	typeof fullApi,
-	FunctionReference<any, "internal">
+  typeof fullApi,
+  FunctionReference<any, "internal">
 >;
 
 export declare const components: {
-	epayco: import("@pulgueta/epayco-convex/_generated/component.js").ComponentApi<"epayco">;
+  epayco: import("@pulgueta/epayco-convex/_generated/component.js").ComponentApi<"epayco">;
 };

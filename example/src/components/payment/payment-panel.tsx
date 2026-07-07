@@ -1,0 +1,323 @@
+import { useQuery } from "convex/react";
+import { CreditCard, Loader2, ShieldCheck } from "lucide-react";
+import { useState, type FormEvent } from "react";
+import { api } from "@cvx/_generated/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import type { Me, SavedCard } from "@/lib/types";
+import { cn } from "@/lib/utils";
+
+export type Billing = {
+	name: string;
+	lastName: string;
+	email: string;
+	docType: string;
+	docNumber: string;
+};
+
+export type PaymentPayload = {
+	savedTokenId?: string;
+	card?: { cardNumber: string; expMonth: string; expYear: string; cvc: string };
+	billing: Billing;
+};
+
+const DOC_TYPES = [
+	{ value: "CC", label: "CC — Cédula de ciudadanía" },
+	{ value: "CE", label: "CE — Cédula de extranjería" },
+	{ value: "NIT", label: "NIT" },
+	{ value: "PP", label: "Passport" },
+	{ value: "TI", label: "TI — Tarjeta de identidad" },
+];
+
+// ePayco sandbox: this Visa test card is approved in test mode. The declined
+// equivalent is 4151 6115 2758 3283 (insufficient funds).
+const TEST_CARD = {
+	cardNumber: "4575 6231 8229 0326",
+	expMonth: "12",
+	expYear: "2030",
+	cvc: "123",
+};
+
+export function PaymentPanel({
+	submitLabel,
+	pending,
+	error,
+	onPay,
+}: {
+	submitLabel: string;
+	pending: boolean;
+	error: string | null;
+	onPay: (payload: PaymentPayload) => void | Promise<void>;
+}) {
+	const savedCards = useQuery(api.account.getLocalTokens) as
+		| SavedCard[]
+		| undefined;
+	const me = useQuery(api.account.getMe) as Me | undefined;
+	const hasSaved = !!savedCards && savedCards.length > 0;
+
+	const [method, setMethod] = useState<"saved" | "new" | null>(null);
+	const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null);
+	const [card, setCard] = useState(TEST_CARD);
+	const [billing, setBilling] = useState<Billing>({
+		name: "Camila",
+		lastName: "Restrepo",
+		email: "",
+		docType: "CC",
+		docNumber: "1032456789",
+	});
+	const [emailTouched, setEmailTouched] = useState(false);
+	const [localError, setLocalError] = useState<string | null>(null);
+
+	const resolvedMethod = method ?? (hasSaved ? "saved" : "new");
+	const resolvedTokenId =
+		selectedTokenId ?? savedCards?.[0]?.epaycoTokenId ?? null;
+	const email = !emailTouched && me?.email ? me.email : billing.email;
+
+	function setBillingField(field: keyof Billing, value: string) {
+		setBilling((prev) => ({ ...prev, [field]: value }));
+	}
+
+	async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+		event.preventDefault();
+		setLocalError(null);
+
+		const finalBilling: Billing = { ...billing, email };
+		if (
+			!finalBilling.name ||
+			!finalBilling.lastName ||
+			!finalBilling.email ||
+			!finalBilling.docNumber
+		) {
+			setLocalError("Fill in your billing details.");
+			return;
+		}
+
+		if (resolvedMethod === "saved") {
+			if (!resolvedTokenId) {
+				setLocalError("Choose a saved card.");
+				return;
+			}
+			await onPay({ savedTokenId: resolvedTokenId, billing: finalBilling });
+			return;
+		}
+
+		const cardNumber = card.cardNumber.replace(/\s+/g, "");
+		if (cardNumber.length < 12 || !card.expMonth || !card.expYear || !card.cvc) {
+			setLocalError("Enter complete card details.");
+			return;
+		}
+		await onPay({
+			card: { ...card, cardNumber },
+			billing: finalBilling,
+		});
+	}
+
+	const shownError = error ?? localError;
+
+	return (
+		<form onSubmit={handleSubmit} className="grid gap-6" noValidate>
+			<section className="grid gap-3">
+				<h3 className="text-sm font-medium">Payment method</h3>
+
+				{hasSaved ? (
+					<RadioGroup
+						value={resolvedMethod === "saved" ? (resolvedTokenId ?? "") : "new"}
+						onValueChange={(value) => {
+							if (value === "new") {
+								setMethod("new");
+							} else {
+								setMethod("saved");
+								setSelectedTokenId(value);
+							}
+						}}
+						className="gap-2"
+					>
+						{savedCards!.map((savedCard) => (
+							<label
+								key={savedCard._id}
+								htmlFor={`card-${savedCard._id}`}
+								className={cn(
+									"flex cursor-pointer items-center gap-3 rounded-lg border border-input bg-card p-3 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5",
+								)}
+							>
+								<RadioGroupItem
+									id={`card-${savedCard._id}`}
+									value={savedCard.epaycoTokenId}
+								/>
+								<CreditCard className="size-4 text-muted-foreground" />
+								<span className="text-sm font-medium">{savedCard.mask}</span>
+								<span className="ml-auto text-xs text-muted-foreground uppercase">
+									{savedCard.franchise}
+								</span>
+							</label>
+						))}
+						<label
+							htmlFor="card-new"
+							className={cn(
+								"flex cursor-pointer items-center gap-3 rounded-lg border border-input bg-card p-3 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5",
+							)}
+						>
+							<RadioGroupItem id="card-new" value="new" />
+							<span className="text-sm font-medium">Use a new card</span>
+						</label>
+					</RadioGroup>
+				) : null}
+
+				{resolvedMethod === "new" ? (
+					<div className="grid gap-3 rounded-lg border border-input bg-card p-4">
+						<div className="grid gap-2">
+							<Label htmlFor="cardNumber">Card number</Label>
+							<Input
+								id="cardNumber"
+								inputMode="numeric"
+								autoComplete="cc-number"
+								value={card.cardNumber}
+								onChange={(e) =>
+									setCard((c) => ({ ...c, cardNumber: e.target.value }))
+								}
+							/>
+						</div>
+						<div className="grid grid-cols-3 gap-3">
+							<div className="grid gap-2">
+								<Label htmlFor="expMonth">Month</Label>
+								<Input
+									id="expMonth"
+									placeholder="MM"
+									inputMode="numeric"
+									autoComplete="cc-exp-month"
+									value={card.expMonth}
+									onChange={(e) =>
+										setCard((c) => ({ ...c, expMonth: e.target.value }))
+									}
+								/>
+							</div>
+							<div className="grid gap-2">
+								<Label htmlFor="expYear">Year</Label>
+								<Input
+									id="expYear"
+									placeholder="YYYY"
+									inputMode="numeric"
+									autoComplete="cc-exp-year"
+									value={card.expYear}
+									onChange={(e) =>
+										setCard((c) => ({ ...c, expYear: e.target.value }))
+									}
+								/>
+							</div>
+							<div className="grid gap-2">
+								<Label htmlFor="cvc">CVC</Label>
+								<Input
+									id="cvc"
+									placeholder="123"
+									inputMode="numeric"
+									autoComplete="cc-csc"
+									value={card.cvc}
+									onChange={(e) =>
+										setCard((c) => ({ ...c, cvc: e.target.value }))
+									}
+								/>
+							</div>
+						</div>
+						<p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+							<ShieldCheck className="size-3.5" />
+							Sandbox test card pre-filled — it tokenizes and approves in test
+							mode. Card data never touches your server.
+						</p>
+					</div>
+				) : null}
+			</section>
+
+			<section className="grid gap-3">
+				<h3 className="text-sm font-medium">Billing details</h3>
+				<div className="grid gap-3 sm:grid-cols-2">
+					<div className="grid gap-2">
+						<Label htmlFor="name">First name</Label>
+						<Input
+							id="name"
+							autoComplete="given-name"
+							value={billing.name}
+							onChange={(e) => setBillingField("name", e.target.value)}
+						/>
+					</div>
+					<div className="grid gap-2">
+						<Label htmlFor="lastName">Last name</Label>
+						<Input
+							id="lastName"
+							autoComplete="family-name"
+							value={billing.lastName}
+							onChange={(e) => setBillingField("lastName", e.target.value)}
+						/>
+					</div>
+				</div>
+				<div className="grid gap-2">
+					<Label htmlFor="billingEmail">Email</Label>
+					<Input
+						id="billingEmail"
+						type="email"
+						autoComplete="email"
+						value={email}
+						onChange={(e) => {
+							setEmailTouched(true);
+							setBillingField("email", e.target.value);
+						}}
+					/>
+				</div>
+				<div className="grid gap-3 sm:grid-cols-[1fr_1fr]">
+					<div className="grid gap-2">
+						<Label htmlFor="docType">Document type</Label>
+						<Select
+							value={billing.docType}
+							onValueChange={(value) => setBillingField("docType", value)}
+						>
+							<SelectTrigger id="docType" className="w-full">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								{DOC_TYPES.map((doc) => (
+									<SelectItem key={doc.value} value={doc.value}>
+										{doc.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+					<div className="grid gap-2">
+						<Label htmlFor="docNumber">Document number</Label>
+						<Input
+							id="docNumber"
+							inputMode="numeric"
+							value={billing.docNumber}
+							onChange={(e) => setBillingField("docNumber", e.target.value)}
+						/>
+					</div>
+				</div>
+			</section>
+
+			{shownError ? (
+				<p role="alert" className="text-sm text-destructive" aria-live="polite">
+					{shownError}
+				</p>
+			) : null}
+
+			<Button
+				type="submit"
+				size="lg"
+				className="w-full"
+				disabled={pending}
+				aria-busy={pending}
+			>
+				{pending ? <Loader2 className="animate-spin" aria-hidden /> : null}
+				{pending ? "Processing…" : submitLabel}
+			</Button>
+		</form>
+	);
+}
