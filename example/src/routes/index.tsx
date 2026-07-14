@@ -87,14 +87,23 @@ function Home() {
 							and recurring billing against the ePayco sandbox.
 						</p>
 						<div className="mt-7 flex flex-wrap gap-3">
-							<Button asChild size="lg" className="h-11 px-5">
-								<a href="#shop">
-									Explore the store
-									<ArrowRight />
-								</a>
+							<Button
+								size="lg"
+								className="h-11 px-5"
+								// biome-ignore lint/a11y/useAnchorContent: we're using a custom anchor element
+								render={<a href="#shop" />}
+							>
+								Explore the store
+								<ArrowRight aria-hidden />
 							</Button>
-							<Button asChild size="lg" variant="outline" className="h-11 px-5">
-								<Link to="/split">Try split payments</Link>
+							<Button
+								size="lg"
+								variant="outline"
+								className="h-11 px-5"
+								render={<Link to="/split" />}
+							>
+								Try split payments
+								<ArrowRight />
 							</Button>
 						</div>
 					</div>
@@ -248,14 +257,12 @@ function Home() {
 							anytime. Subscriptions are powered by ePayco recurring plans.
 						</p>
 						<Button
-							asChild
+							render={<Link to="/plans" />}
 							size="lg"
 							className="mt-6 h-11 bg-ember px-6 text-ember-foreground hover:bg-ember/90"
 						>
-							<Link to="/plans">
-								Explore plans
-								<ArrowRight />
-							</Link>
+							Explore plans
+							<ArrowRight aria-hidden />
 						</Button>
 					</div>
 				</div>
