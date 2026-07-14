@@ -89,7 +89,7 @@ function SplitRoute() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
       <div className="max-w-2xl">
         <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
           <Users className="size-3.5" />
@@ -101,8 +101,8 @@ function SplitRoute() {
         <p className="mt-3 text-pretty text-muted-foreground">
           Buy a <strong className="text-foreground">Community Harvest</strong>{" "}
           box and ePayco disperses your single charge across everyone who made
-          it — the roaster, the growers' cooperative, and last-mile logistics —
-          in one transaction.
+          it. The roaster, the growers' cooperative and last-mile logistics all
+          receive their share in one transaction.
         </p>
       </div>
 
@@ -163,15 +163,18 @@ function SplitRoute() {
             )}
             <p className="mt-5 flex items-start gap-2 rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">
               <Info className="mt-0.5 size-3.5 shrink-0" />
-              In this demo, receiver merchant ids default to the store's sandbox
-              account. In production each partner is a real ePayco merchant id
-              (set via <code>EPAYCO_SPLIT_RECEIVER_*</code>).
+              <span className="min-w-0">
+                In this demo, receiver merchant ids default to the store's
+                sandbox account. In production each partner is a real ePayco
+                merchant id (set via{" "}
+                <code className="break-all">EPAYCO_SPLIT_RECEIVER_*</code>).
+              </span>
             </p>
           </section>
         </div>
 
-        <aside className="lg:sticky lg:top-20">
-          <div className="rounded-xl bg-card p-5 ring-1 ring-border">
+        <aside className="min-w-0 lg:sticky lg:top-20">
+          <div className="min-w-0 rounded-xl bg-card p-5 ring-1 ring-border">
             <h2 className="font-display text-lg font-medium">
               Pay for the box
             </h2>

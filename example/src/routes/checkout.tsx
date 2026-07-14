@@ -11,6 +11,13 @@ import {
   type PaymentPayload,
 } from "@/components/payment/payment-panel";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { errorMessage } from "@/lib/errors";
 import { formatCOP } from "@/lib/format";
 import { useCart } from "@/lib/cart";
@@ -67,7 +74,7 @@ function Checkout() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
       <h1 className="font-display text-3xl font-semibold tracking-tight">
         Checkout
       </h1>
@@ -75,14 +82,26 @@ function Checkout() {
         Card payments are tokenized and charged through the ePayco sandbox.
       </p>
 
-      <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-start">
-        <div className="order-2 flex-1 lg:order-1">
-          <PaymentPanel
-            submitLabel={total > 0 ? `Pay ${formatCOP(total)}` : "Pay now"}
-            pending={isLoading}
-            error={error ? errorMessage(error) : null}
-            onPay={handlePay}
-          />
+      <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+        <div className="order-2 lg:order-1">
+          <Card>
+            <CardHeader className="border-b">
+              <CardTitle className="font-display text-xl">
+                Payment details
+              </CardTitle>
+              <CardDescription>
+                Use a saved card or the approved sandbox test card.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PaymentPanel
+                submitLabel={total > 0 ? `Pay ${formatCOP(total)}` : "Pay now"}
+                pending={isLoading}
+                error={error ? errorMessage(error) : null}
+                onPay={handlePay}
+              />
+            </CardContent>
+          </Card>
           <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
             <ShieldCheck className="size-3.5" />
             Card details are forwarded to ePayco for tokenization and never
@@ -90,7 +109,7 @@ function Checkout() {
           </p>
         </div>
 
-        <aside className="order-1 w-full lg:order-2 lg:sticky lg:top-20 lg:w-[360px]">
+        <aside className="order-1 w-full lg:order-2 lg:sticky lg:top-20">
           <OrderSummary />
         </aside>
       </div>

@@ -1,7 +1,14 @@
 import { useQuery } from "convex/react";
-import { CreditCard, Loader2, ShieldCheck } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import {
+  Check,
+  CircleAlert,
+  CreditCard,
+  Loader2,
+  ShieldCheck,
+} from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { api } from "@cvx/_generated/api";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,11 +38,11 @@ export type PaymentPayload = {
 };
 
 const DOC_TYPES = [
-  { value: "CC", label: "CC — Cédula de ciudadanía" },
-  { value: "CE", label: "CE — Cédula de extranjería" },
+  { value: "CC", label: "CC - Cédula de ciudadanía" },
+  { value: "CE", label: "CE - Cédula de extranjería" },
   { value: "NIT", label: "NIT" },
   { value: "PP", label: "Passport" },
-  { value: "TI", label: "TI — Tarjeta de identidad" },
+  { value: "TI", label: "TI - Tarjeta de identidad" },
 ];
 
 // ePayco sandbox: this Visa test card is approved in test mode. The declined
@@ -78,12 +85,25 @@ export function PaymentPanel({
   const [emailTouched, setEmailTouched] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const profileApplied = useRef(false);
 
   const busy = pending || submitting;
   const resolvedMethod =
     method ?? (savedCardsLoading ? null : hasSaved ? "saved" : "new");
   const resolvedTokenId = selectedTokenId ?? savedCards?.[0]?._id ?? null;
   const email = !emailTouched && me?.email ? me.email : billing.email;
+
+  useEffect(() => {
+    if (!me || profileApplied.current) return;
+    profileApplied.current = true;
+    setBilling((current) => ({
+      ...current,
+      name: me.firstName || current.name,
+      lastName: me.lastName || current.lastName,
+      docType: me.documentType || current.docType,
+      docNumber: me.documentNumber || current.docNumber,
+    }));
+  }, [me]);
 
   function setBillingField(field: keyof Billing, value: string) {
     setBilling((prev) => ({ ...prev, [field]: value }));
@@ -156,7 +176,7 @@ export function PaymentPanel({
 
         {savedCardsLoading ? (
           <p className="rounded-lg border border-input bg-card p-3 text-sm text-muted-foreground">
-            Loading saved cards…
+            Loading saved cards...
           </p>
         ) : hasSaved ? (
           <RadioGroup
@@ -216,7 +236,7 @@ export function PaymentPanel({
                 }
               />
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               <div className="grid gap-2">
                 <Label htmlFor="expMonth">Month</Label>
                 <Input
@@ -243,7 +263,7 @@ export function PaymentPanel({
                   }
                 />
               </div>
-              <div className="grid gap-2">
+              <div className="col-span-2 grid gap-2 sm:col-span-1">
                 <Label htmlFor="cvc">CVC</Label>
                 <Input
                   id="cvc"
@@ -257,17 +277,26 @@ export function PaymentPanel({
                 />
               </div>
             </div>
-            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <ShieldCheck className="size-3.5" />
-              Sandbox test card pre-filled — forwarded to ePayco for
-              tokenization and never stored by this server.
-            </p>
+            <Alert className="bg-muted/40">
+              <ShieldCheck />
+              <AlertTitle>Sandbox card ready</AlertTitle>
+              <AlertDescription>
+                The approved test card is prefilled. Details go directly to
+                ePayco for tokenization and are not stored by this server.
+              </AlertDescription>
+            </Alert>
           </div>
         ) : null}
       </section>
 
       <section className="grid gap-3">
         <h3 className="text-sm font-medium">Billing details</h3>
+        {me?.firstName || me?.documentNumber ? (
+          <p className="flex items-center gap-1.5 text-xs text-primary">
+            <Check className="size-3.5" />
+            Filled from your Tostado profile. You can edit any field.
+          </p>
+        ) : null}
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="grid gap-2">
             <Label htmlFor="name">First name</Label>
@@ -338,9 +367,10 @@ export function PaymentPanel({
       </section>
 
       {shownError ? (
-        <p role="alert" className="text-sm text-destructive" aria-live="polite">
-          {shownError}
-        </p>
+        <Alert variant="destructive" aria-live="polite">
+          <CircleAlert />
+          <AlertDescription>{shownError}</AlertDescription>
+        </Alert>
       ) : null}
 
       <Button
@@ -351,7 +381,7 @@ export function PaymentPanel({
         aria-busy={busy}
       >
         {busy ? <Loader2 className="animate-spin" aria-hidden /> : null}
-        {busy ? "Processing…" : submitLabel}
+        {busy ? "Processing..." : submitLabel}
       </Button>
     </form>
   );
