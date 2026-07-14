@@ -29,6 +29,7 @@ export type Billing = {
   email: string;
   docType: string;
   docNumber: string;
+  cellPhone?: string;
 };
 
 export type PaymentPayload = {
@@ -86,6 +87,7 @@ export function PaymentPanel({
   const [localError, setLocalError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const profileApplied = useRef(false);
+  const editedFields = useRef(new Set<keyof Billing>());
 
   const busy = pending || submitting;
   const resolvedMethod =
@@ -96,16 +98,27 @@ export function PaymentPanel({
   useEffect(() => {
     if (!me || profileApplied.current) return;
     profileApplied.current = true;
+    // Only fill fields the customer hasn't already edited: on slow
+    // connections the profile can resolve after typing has started.
+    const edited = editedFields.current;
     setBilling((current) => ({
       ...current,
-      name: me.firstName || current.name,
-      lastName: me.lastName || current.lastName,
-      docType: me.documentType || current.docType,
-      docNumber: me.documentNumber || current.docNumber,
+      ...(edited.has("name") ? {} : { name: me.firstName || current.name }),
+      ...(edited.has("lastName")
+        ? {}
+        : { lastName: me.lastName || current.lastName }),
+      ...(edited.has("docType")
+        ? {}
+        : { docType: me.documentType || current.docType }),
+      ...(edited.has("docNumber")
+        ? {}
+        : { docNumber: me.documentNumber || current.docNumber }),
+      cellPhone: me.phone || current.cellPhone,
     }));
   }, [me]);
 
   function setBillingField(field: keyof Billing, value: string) {
+    editedFields.current.add(field);
     setBilling((prev) => ({ ...prev, [field]: value }));
   }
 
@@ -340,7 +353,7 @@ export function PaymentPanel({
             <Label htmlFor="docType">Document type</Label>
             <Select
               value={billing.docType}
-              onValueChange={(value) => setBillingField("docType", value)}
+              onValueChange={(value) => setBillingField("docType", value ?? "")}
             >
               <SelectTrigger id="docType" className="w-full">
                 <SelectValue />
