@@ -28,13 +28,13 @@ export function RequireAuth({
 	return (
 		<>
 			<AuthLoading>
-				<div className="mx-auto w-full max-w-md px-4 py-16">
+				<div className="mx-auto w-full max-w-2xl px-4 py-16">
 					<Skeleton className="h-80 w-full rounded-xl" />
 				</div>
 			</AuthLoading>
 
 			<Unauthenticated>
-				<div className="mx-auto w-full max-w-md px-4 py-12 sm:py-20">
+				<div className="mx-auto w-full max-w-2xl px-4 py-10 sm:py-16">
 					<Card className="p-2">
 						<CardHeader className="items-center text-center">
 							<span className="mx-auto mb-2 flex size-11 items-center justify-center rounded-full bg-secondary text-secondary-foreground">

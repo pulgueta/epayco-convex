@@ -76,6 +76,6 @@ export function paymentMethodLabel(method: string | undefined | null): string {
 		case "safetypay":
 			return "SafetyPay";
 		default:
-			return method ?? "—";
+			return method ?? "Not available";
 	}
 }

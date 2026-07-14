@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -10,50 +12,50 @@
 :root {
   --radius: 0.625rem;
 
-  --background: oklch(0.99 0.003 190);
-  --foreground: oklch(0.23 0.018 190);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
 
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.23 0.018 190);
+  --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.23 0.018 190);
+  --popover-foreground: oklch(0.145 0 0);
 
-  --primary: oklch(0.44 0.08 184);
-  --primary-foreground: oklch(0.985 0.005 180);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
 
-  --secondary: oklch(0.96 0.006 190);
-  --secondary-foreground: oklch(0.3 0.02 190);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
 
-  --muted: oklch(0.965 0.005 190);
-  --muted-foreground: oklch(0.43 0.02 195);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
 
-  --accent: oklch(0.95 0.008 190);
-  --accent-foreground: oklch(0.3 0.02 190);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
 
   /* Brand accent — amber "roast". Use sparingly for prices and key CTAs. */
   --ember: oklch(0.7 0.15 55);
   --ember-foreground: oklch(0.26 0.05 50);
 
-  --destructive: oklch(0.55 0.2 25);
+  --destructive: oklch(0.577 0.245 27.325);
 
-  --border: oklch(0.91 0.005 195);
-  --input: oklch(0.91 0.005 195);
-  --ring: oklch(0.44 0.08 184);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
 
-  --chart-1: oklch(0.55 0.1 184);
-  --chart-2: oklch(0.7 0.15 55);
-  --chart-3: oklch(0.5 0.09 230);
-  --chart-4: oklch(0.62 0.12 145);
-  --chart-5: oklch(0.55 0.14 15);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
 
-  --sidebar: oklch(0.975 0.004 190);
-  --sidebar-foreground: oklch(0.23 0.018 190);
-  --sidebar-primary: oklch(0.44 0.08 184);
-  --sidebar-primary-foreground: oklch(0.985 0.005 180);
-  --sidebar-accent: oklch(0.95 0.008 190);
-  --sidebar-accent-foreground: oklch(0.3 0.02 190);
-  --sidebar-border: oklch(0.91 0.005 195);
-  --sidebar-ring: oklch(0.44 0.08 184);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
 
   --font-sans: "Geist Variable", ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", sans-serif;
@@ -62,49 +64,49 @@
 }
 
 .dark {
-  --background: oklch(0.185 0.014 190);
-  --foreground: oklch(0.95 0.006 180);
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
 
-  --card: oklch(0.215 0.016 190);
-  --card-foreground: oklch(0.95 0.006 180);
-  --popover: oklch(0.215 0.016 190);
-  --popover-foreground: oklch(0.95 0.006 180);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
 
-  --primary: oklch(0.72 0.1 182);
-  --primary-foreground: oklch(0.18 0.02 190);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
 
-  --secondary: oklch(0.27 0.016 190);
-  --secondary-foreground: oklch(0.93 0.006 180);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
 
-  --muted: oklch(0.27 0.014 190);
-  --muted-foreground: oklch(0.72 0.012 185);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
 
-  --accent: oklch(0.3 0.02 190);
-  --accent-foreground: oklch(0.95 0.006 180);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
 
   --ember: oklch(0.76 0.15 60);
   --ember-foreground: oklch(0.2 0.03 50);
 
-  --destructive: oklch(0.62 0.2 22);
+  --destructive: oklch(0.704 0.191 22.216);
 
   --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 14%);
-  --ring: oklch(0.72 0.1 182);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
 
-  --chart-1: oklch(0.68 0.12 184);
-  --chart-2: oklch(0.76 0.15 60);
-  --chart-3: oklch(0.62 0.11 230);
-  --chart-4: oklch(0.7 0.13 145);
-  --chart-5: oklch(0.64 0.15 15);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
 
-  --sidebar: oklch(0.215 0.016 190);
-  --sidebar-foreground: oklch(0.95 0.006 180);
-  --sidebar-primary: oklch(0.72 0.1 182);
-  --sidebar-primary-foreground: oklch(0.18 0.02 190);
-  --sidebar-accent: oklch(0.3 0.02 190);
-  --sidebar-accent-foreground: oklch(0.95 0.006 180);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.72 0.1 182);
+  --sidebar-ring: oklch(0.556 0 0);
 }
 
 @theme inline {
@@ -142,7 +144,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  --font-sans: var(--font-sans);
+  --font-sans: 'Geist Variable', sans-serif;
   --font-serif: var(--font-serif);
   --font-mono: var(--font-mono);
 
@@ -151,6 +153,9 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --radius-2xl: calc(var(--radius) + 8px);
+  --font-heading: var(--font-sans);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 @layer base {
@@ -161,10 +166,11 @@
   html {
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
+    @apply font-sans;
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply font-sans antialiased bg-background text-foreground;
     margin: 0;
     font-feature-settings: "cv11", "ss01";
   }

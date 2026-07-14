@@ -8,7 +8,7 @@ function RootLayout() {
 	return (
 		<div className="flex min-h-dvh flex-col">
 			<SiteHeader />
-			<main className="flex-1">
+			<main className="w-full max-w-full flex-1 overflow-x-hidden">
 				<Outlet />
 			</main>
 			<SiteFooter />

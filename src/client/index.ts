@@ -1,10 +1,12 @@
 import { httpActionGeneric, queryGeneric } from "convex/server";
 import type {
 	Auth,
+	FunctionReference,
+	FunctionReturnType,
 	GenericActionCtx,
 	GenericDataModel,
-	GenericQueryCtx,
 	HttpRouter,
+	OptionalRestArgs,
 } from "convex/server";
 import type { Infer } from "convex/values";
 import { v } from "convex/values";
@@ -22,7 +24,14 @@ import {
 	tokenInfoValidator,
 } from "../component/validators.js";
 
-type QueryCtx = Pick<GenericQueryCtx<GenericDataModel>, "runQuery">;
+// Both query and action contexts satisfy this shape; `GenericQueryCtx` alone
+// would reject actions since convex 1.42 added options to its `runQuery`.
+type QueryCtx = {
+	runQuery: <Query extends FunctionReference<"query", "public" | "internal">>(
+		query: Query,
+		...args: OptionalRestArgs<Query>
+	) => Promise<FunctionReturnType<Query>>;
+};
 type ActionCtx = Pick<
 	GenericActionCtx<GenericDataModel>,
 	"runQuery" | "runMutation" | "runAction"

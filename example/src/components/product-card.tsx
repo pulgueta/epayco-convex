@@ -41,7 +41,7 @@ export function ProductCard({ product }: { product: Product }) {
 					{product.name}
 				</Link>
 				<p className="mt-0.5 text-xs text-muted-foreground">
-					{product.origin} · {product.weight}
+					{product.origin}, {product.weight}
 				</p>
 				<p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
 					{product.blurb}

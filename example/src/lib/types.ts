@@ -79,4 +79,12 @@ export type Subscription = {
   status: string;
 };
 
-export type Me = { email: string | null; name: string | null } | null;
+export type Me = {
+  email: string | null;
+  name: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+  documentType: string | null;
+  documentNumber: string | null;
+} | null;

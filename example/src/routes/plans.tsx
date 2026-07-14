@@ -40,7 +40,7 @@ function PlansRoute() {
   const [selected, setSelected] = useState<PlanTier | null>(null);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
+    <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
       <div className="mx-auto max-w-2xl text-center">
         <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
           <Coffee className="size-3.5" />
@@ -51,7 +51,7 @@ function PlansRoute() {
         </h1>
         <p className="mt-3 text-pretty text-muted-foreground">
           Pick a tier and we'll roast and ship on schedule. Recurring billing
-          runs on ePayco plans — pause or cancel anytime from your account.
+          runs on ePayco plans. Pause or cancel anytime from your account.
         </p>
       </div>
 
@@ -143,8 +143,8 @@ function ActiveSubscriptionBanner({
           <strong>{tier?.name ?? "Coffee Club"}</strong> plan.
         </p>
       </div>
-      <Button asChild variant="outline" size="sm">
-        <Link to="/account">Manage</Link>
+      <Button variant="outline" size="sm" render={<Link to="/account" />}>
+        Manage
       </Button>
     </div>
   );
@@ -251,7 +251,7 @@ function SubscribeSheet({
               <>
                 {formatCOP(plan.amountCop)}/month
                 {plan.trialDays > 0
-                  ? ` · ${plan.trialDays}-day free trial`
+                  ? ` with a ${plan.trialDays}-day free trial`
                   : ""}
                 . Cancel anytime.
               </>
@@ -273,7 +273,7 @@ function SubscribeSheet({
             <PaymentPanel
               submitLabel={
                 plan
-                  ? `Subscribe — ${formatCOP(plan.amountCop)}/mo`
+                  ? `Subscribe for ${formatCOP(plan.amountCop)}/mo`
                   : "Subscribe"
               }
               pending={isLoading}

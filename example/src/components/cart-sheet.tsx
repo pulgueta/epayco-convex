@@ -3,6 +3,7 @@ import { useQuery } from "convex/react";
 import { ArrowRight, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { api } from "@cvx/_generated/api";
+
 import { Price } from "@/components/money";
 import { ProductVisual } from "@/components/product-visual";
 import { Button } from "@/components/ui/button";
@@ -41,27 +42,29 @@ export function CartSheet() {
 
 	return (
 		<Sheet open={open} onOpenChange={setOpen}>
-			<SheetTrigger asChild>
-				<Button
-					variant="ghost"
-					size="icon"
-					className="relative"
-					aria-label={`Cart, ${count} item${count === 1 ? "" : "s"}`}
-				>
-					<ShoppingBag />
-					{count > 0 ? (
-						<span className="absolute -top-0.5 -right-0.5 flex min-w-4 items-center justify-center rounded-full bg-ember px-1 text-[10px] font-semibold text-ember-foreground tabular-nums">
-							{count}
-						</span>
-					) : null}
-				</Button>
+			<SheetTrigger
+				render={
+					<Button
+						variant="ghost"
+						size="icon"
+						className="relative"
+						aria-label={`Cart, ${count} item${count === 1 ? "" : "s"}`}
+					/>
+				}
+			>
+				<ShoppingBag aria-hidden />
+				{count > 0 ? (
+					<span className="absolute -top-0.5 -right-0.5 flex min-w-4 items-center justify-center rounded-full bg-ember px-1 text-[10px] font-semibold text-ember-foreground tabular-nums">
+						{count}
+					</span>
+				) : null}
 			</SheetTrigger>
 			<SheetContent className="flex w-full flex-col gap-0 sm:max-w-md">
 				<SheetHeader>
 					<SheetTitle className="font-display text-xl">Your cart</SheetTitle>
 					<SheetDescription>
 						{count > 0
-							? `${count} item${count === 1 ? "" : "s"} — checkout is card-powered by ePayco.`
+							? `${count} item${count === 1 ? "" : "s"}. Checkout is card-powered by ePayco.`
 							: "Nothing here yet."}
 					</SheetDescription>
 				</SheetHeader>
@@ -74,10 +77,10 @@ export function CartSheet() {
 						<p className="text-sm text-muted-foreground">
 							Your cart is empty. Find a bag you love.
 						</p>
-						<SheetClose asChild>
-							<Button asChild variant="outline">
-								<Link to="/">Browse coffee</Link>
-							</Button>
+						<SheetClose
+							render={<Button variant="outline" render={<Link to="/" />} />}
+						>
+							Browse coffee
 						</SheetClose>
 					</div>
 				) : (
@@ -149,12 +152,10 @@ export function CartSheet() {
 								<span className="text-muted-foreground">Subtotal</span>
 								<Price value={subtotal} className="text-base" />
 							</div>
-							<SheetClose asChild>
-								<Button asChild size="lg" className="w-full">
-									<Link to="/checkout">
-										Checkout
-										<ArrowRight />
-									</Link>
+							<SheetClose render={<Link to="/checkout" />}>
+								<Button size="lg" className="w-full">
+									Checkout
+									<ArrowRight aria-hidden />
 								</Button>
 							</SheetClose>
 							<p className="text-center text-xs text-muted-foreground">

@@ -38,7 +38,15 @@ export const getMe = query({
     if (!userId) return null;
     const user = await ctx.db.get(userId);
     if (!user) return null;
-    return { email: user.email ?? null, name: user.name ?? null };
+    return {
+      email: user.email ?? null,
+      name: user.name ?? null,
+      firstName: user.firstName ?? null,
+      lastName: user.lastName ?? null,
+      phone: user.phone ?? null,
+      documentType: user.documentType ?? null,
+      documentNumber: user.documentNumber ?? null,
+    };
   },
 });
 

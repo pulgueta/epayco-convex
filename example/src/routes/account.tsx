@@ -1,13 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAction, useQuery } from "convex/react";
-import { CreditCard, Loader2, Package } from "lucide-react";
+import {
+	CreditCard,
+	IdCard,
+	Loader2,
+	Package,
+	Phone,
+	UserRound,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { api } from "@cvx/_generated/api";
 import { RequireAuth } from "@/components/auth/require-auth";
 import { Price } from "@/components/money";
 import { PaymentStatusBadge } from "@/components/payment/payment-status";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
 import { paymentMethodLabel } from "@/lib/format";
@@ -42,18 +51,19 @@ function AccountDashboard() {
 	const me = useQuery(api.account.getMe) as Me | undefined;
 
 	return (
-		<div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+		<div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
 			<header>
 				<h1 className="font-display text-3xl font-semibold tracking-tight">
-					Your account
+					{me?.firstName ? `${me.firstName}'s account` : "Your account"}
 				</h1>
 				{me?.email ? (
 					<p className="mt-1 text-muted-foreground">{me.email}</p>
 				) : null}
 			</header>
 
-			<div className="mt-8 grid gap-6 lg:grid-cols-[340px_1fr] lg:items-start">
+			<div className="mt-8 grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start">
 				<div className="grid gap-6">
+					<ProfilePanel me={me} />
 					<SubscriptionPanel />
 					<SavedCardsPanel />
 				</div>
@@ -71,10 +81,46 @@ function PanelShell({
 	children: React.ReactNode;
 }) {
 	return (
-		<section className="rounded-xl bg-card p-5 ring-1 ring-border">
-			<h2 className="font-display text-lg font-medium">{title}</h2>
-			<div className="mt-4">{children}</div>
+		<section>
+			<Card>
+				<CardHeader>
+					<CardTitle className="font-display text-lg">{title}</CardTitle>
+				</CardHeader>
+				<CardContent>{children}</CardContent>
+			</Card>
 		</section>
+	);
+}
+
+function ProfilePanel({ me }: { me: Me | undefined }) {
+	return (
+		<PanelShell title="Customer profile">
+			{me === undefined ? (
+				<Skeleton className="h-24 w-full" />
+			) : (
+				<div className="grid gap-3 text-sm">
+					<div className="flex items-center gap-3">
+						<UserRound className="size-4 text-muted-foreground" />
+						<span>{me?.name ?? "Profile name not saved"}</span>
+					</div>
+					<div className="flex items-center gap-3">
+						<Phone className="size-4 text-muted-foreground" />
+						<span>{me?.phone ?? "Mobile number not saved"}</span>
+					</div>
+					<div className="flex items-center gap-3">
+						<IdCard className="size-4 text-muted-foreground" />
+						<span>
+							{me?.documentType && me.documentNumber
+								? `${me.documentType} ${me.documentNumber}`
+								: "Document not saved"}
+						</span>
+					</div>
+					<p className="pt-1 text-xs leading-relaxed text-muted-foreground">
+						These details are used to prefill ePayco billing fields.
+					</p>
+				</div>
+			)}
+		</PanelShell>
 	);
 }
 
@@ -130,15 +176,17 @@ function SubscriptionPanel() {
 						aria-busy={cancelling}
 						className="w-full text-destructive hover:text-destructive"
 					>
-						{cancelling ? <Loader2 className="animate-spin" aria-hidden /> : null}
-						{cancelling ? "Cancelling…" : "Cancel subscription"}
+						{cancelling ? (
+							<Loader2 className="animate-spin" aria-hidden />
+						) : null}
+						{cancelling ? "Cancelling..." : "Cancel subscription"}
 					</Button>
 				</div>
 			) : (
 				<div className="grid gap-3 text-sm">
 					<p className="text-muted-foreground">No active subscription.</p>
-					<Button asChild size="sm" variant="outline">
-						<Link to="/plans">Browse plans</Link>
+					<Button size="sm" variant="outline" render={<Link to="/plans" />}>
+						Browse plans
 					</Button>
 				</div>
 			)}
@@ -198,8 +246,8 @@ function OrderHistoryPanel() {
 					<p className="text-sm text-muted-foreground">
 						No orders yet. Your payments will show up here in real time.
 					</p>
-					<Button asChild size="sm">
-						<Link to="/">Start shopping</Link>
+					<Button size="sm" render={<Link to="/" />}>
+						Start shopping
 					</Button>
 				</div>
 			) : (
@@ -209,27 +257,32 @@ function OrderHistoryPanel() {
 							<Link
 								to="/order/$ref"
 								params={{ ref: tx.epaycoRef }}
-								className="flex items-center gap-4 py-4 transition-colors hover:bg-muted/40"
+								className="flex flex-col items-start gap-3 py-4 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:gap-4"
 							>
 								<div className="min-w-0 flex-1">
-									<div className="flex items-center gap-2">
+									<div className="flex flex-wrap items-center gap-2">
 										<p className="truncate text-sm font-medium">
 											{tx.description}
 										</p>
 										{tx.splitPayment ? (
-											<span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-secondary-foreground">
-												Split
-											</span>
+											<Badge
+												variant="secondary"
+												className="h-5 px-1.5 text-[10px]"
+											>
+												Split payment
+											</Badge>
 										) : null}
 									</div>
-									<p className="mt-0.5 text-xs text-muted-foreground">
-										{dateFmt.format(tx._creationTime)} ·{" "}
-										{paymentMethodLabel(tx.paymentMethod)} ·{" "}
+									<p className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs text-muted-foreground">
+										<span>{dateFmt.format(tx._creationTime)}</span>
+										<span>{paymentMethodLabel(tx.paymentMethod)}</span>
 										<span className="font-mono">{tx.epaycoRef}</span>
 									</p>
 								</div>
-								<Price value={tx.amount} className="text-sm" />
-								<PaymentStatusBadge status={tx.status} />
+								<div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-end">
+									<Price value={tx.amount} className="text-sm" />
+									<PaymentStatusBadge status={tx.status} />
+								</div>
 							</Link>
 						</li>
 					))}
