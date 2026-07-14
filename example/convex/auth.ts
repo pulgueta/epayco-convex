@@ -27,12 +27,15 @@ const TostadoPassword = Password<DataModel>({
 			) {
 				throw new Error("Complete your customer details.");
 			}
-			if (!/^\+57\d{10}$/.test(phone)) {
-				throw new Error("Enter a valid Colombian mobile number.");
-			}
-			if (!["CC", "CE", "NIT", "PP", "TI"].includes(documentType)) {
-				throw new Error("Choose a valid document type.");
-			}
+		}
+
+		// The profile callback also runs on sign-in, where these fields are
+		// optional — but when present they must still be valid.
+		if (phone && !/^\+57\d{10}$/.test(phone)) {
+			throw new Error("Enter a valid Colombian mobile number.");
+		}
+		if (documentType && !["CC", "CE", "NIT", "PP", "TI"].includes(documentType)) {
+			throw new Error("Choose a valid document type.");
 		}
 
 		return {
