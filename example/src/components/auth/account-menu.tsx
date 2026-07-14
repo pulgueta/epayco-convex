@@ -58,7 +58,7 @@ export function AccountMenu() {
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
 					className="text-destructive focus:text-destructive"
-					onSelect={() => void signOut()}
+					onClick={() => void signOut()}
 				>
 					<LogOut />
 					Sign out
