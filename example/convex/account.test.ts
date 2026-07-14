@@ -8,6 +8,34 @@ describe("account", () => {
 		expect(await t.query(api.account.getMe, {})).toBeNull();
 	});
 
+	test("getMe returns the customer profile used to prefill checkout", async () => {
+		const t = initConvexTest();
+		const userId = await t.run((ctx) =>
+			ctx.db.insert("users", {
+				email: "camila@example.com",
+				name: "Camila Restrepo",
+				firstName: "Camila",
+				lastName: "Restrepo",
+				phone: "+573001234567",
+				documentType: "CC",
+				documentNumber: "1032456789",
+			}),
+		);
+
+		const me = await t
+			.withIdentity({ subject: userId })
+			.query(api.account.getMe, {});
+		expect(me).toEqual({
+			email: "camila@example.com",
+			name: "Camila Restrepo",
+			firstName: "Camila",
+			lastName: "Restrepo",
+			phone: "+573001234567",
+			documentType: "CC",
+			documentNumber: "1032456789",
+		});
+	});
+
 	test("getLocalTokens returns [] when signed out", async () => {
 		const t = initConvexTest();
 		expect(await t.query(api.account.getLocalTokens, {})).toEqual([]);
