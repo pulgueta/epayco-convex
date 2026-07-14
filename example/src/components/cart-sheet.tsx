@@ -61,7 +61,7 @@ export function CartSheet() {
 					<SheetTitle className="font-display text-xl">Your cart</SheetTitle>
 					<SheetDescription>
 						{count > 0
-							? `${count} item${count === 1 ? "" : "s"} — checkout is card-powered by ePayco.`
+							? `${count} item${count === 1 ? "" : "s"}. Checkout is card-powered by ePayco.`
 							: "Nothing here yet."}
 					</SheetDescription>
 				</SheetHeader>

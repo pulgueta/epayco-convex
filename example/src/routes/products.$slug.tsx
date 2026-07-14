@@ -26,7 +26,7 @@ function ProductPage() {
 
 	if (product === undefined) {
 		return (
-			<div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-2">
+			<div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-2">
 				<Skeleton className="aspect-square w-full rounded-2xl" />
 				<div className="grid content-start gap-4">
 					<Skeleton className="h-10 w-2/3" />
@@ -40,7 +40,7 @@ function ProductPage() {
 
 	if (product === null) {
 		return (
-			<div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-24 text-center">
+			<div className="mx-auto flex max-w-7xl flex-col items-center gap-4 px-4 py-24 text-center">
 				<h1 className="font-display text-3xl font-semibold">
 					We couldn't find that.
 				</h1>
@@ -62,7 +62,7 @@ function ProductPage() {
 	}
 
 	return (
-		<div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+		<div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
 			<Link
 				to="/"
 				className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"

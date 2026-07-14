@@ -30,7 +30,7 @@ const HERO: Record<StatusTone, { Icon: LucideIcon; ring: string; headline: strin
 		success: {
 			Icon: CheckCircle2,
 			ring: "text-primary",
-			headline: "Thank you — your payment was approved.",
+			headline: "Thank you. Your payment was approved.",
 		},
 		pending: {
 			Icon: Clock,

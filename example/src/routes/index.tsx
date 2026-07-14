@@ -1,6 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
-import { ArrowRight, CreditCard, Repeat, Split } from "lucide-react";
+import {
+	ArrowRight,
+	CreditCard,
+	Repeat,
+	ShieldCheck,
+	Split,
+} from "lucide-react";
 import { useState } from "react";
 import { api } from "@cvx/_generated/api";
 import { Price } from "@/components/money";
@@ -16,10 +22,11 @@ export const Route = createFileRoute("/")({ component: Home });
 const CAPABILITIES = [
 	{
 		icon: CreditCard,
-		title: "Tokenized card checkout",
-		copy: "Tokenize, create a customer, charge — and follow the transaction live.",
+		title: "Card checkout",
+		copy: "Create a customer, tokenize a card and follow the transaction status reactively.",
 		to: "#shop" as const,
-		cta: "Add to cart",
+		cta: "Shop and pay",
+		className: "md:col-span-2 lg:col-span-6",
 	},
 	{
 		icon: Split,
@@ -27,13 +34,15 @@ const CAPABILITIES = [
 		copy: "Disperse one charge across a roaster, a grower co-op and logistics.",
 		to: "/split" as const,
 		cta: "Try a split",
+		className: "md:col-span-1 lg:col-span-3",
 	},
 	{
 		icon: Repeat,
 		title: "Subscriptions",
-		copy: "Recurring Coffee Club plans with trials, sign-up and cancellation.",
+		copy: "Create recurring plans with trials, sign-up and cancellation.",
 		to: "/plans" as const,
 		cta: "See plans",
+		className: "md:col-span-1 lg:col-span-3",
 	},
 ];
 
@@ -64,29 +73,28 @@ function Home() {
 							"radial-gradient(60% 60% at 85% 0%, color-mix(in oklch, var(--primary) 12%, transparent), transparent 60%)",
 					}}
 				/>
-				<div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 md:grid-cols-2 md:py-24">
+				<div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 md:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)] md:py-20 lg:gap-16">
 					<div>
-						<span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-							<span className="size-1.5 rounded-full bg-primary" />
-							ePayco × Convex · live sandbox demo
-						</span>
-						<h1 className="font-display mt-5 text-5xl leading-[1.02] font-semibold tracking-tight text-balance sm:text-6xl">
-							Coffee worth the wait.
+						<p className="flex items-center gap-2 text-sm font-medium text-primary">
+							<ShieldCheck className="size-4" />
+							ePayco sandbox store
+						</p>
+						<h1 className="font-display mt-4 max-w-3xl text-5xl leading-[1.02] font-semibold tracking-tight text-balance sm:text-6xl lg:text-7xl">
+							Colombian coffee. Real payment flows.
 						</h1>
-						<p className="mt-5 max-w-md text-base text-pretty text-muted-foreground sm:text-lg">
-							Tostado roasts single-origin Colombian coffee in small batches.
-							This storefront is also a working demo of the ePayco Convex
-							component — card checkout, split payments and subscriptions.
+						<p className="mt-5 max-w-xl text-base text-pretty text-muted-foreground sm:text-lg">
+							Shop Tostado while testing card tokenization, split settlements
+							and recurring billing against the ePayco sandbox.
 						</p>
 						<div className="mt-7 flex flex-wrap gap-3">
-							<Button asChild size="lg" className="h-11 px-6">
+							<Button asChild size="lg" className="h-11 px-5">
 								<a href="#shop">
-									Shop the roastery
+									Explore the store
 									<ArrowRight />
 								</a>
 							</Button>
-							<Button asChild size="lg" variant="outline" className="h-11 px-6">
-								<Link to="/plans">Join the Coffee Club</Link>
+							<Button asChild size="lg" variant="outline" className="h-11 px-5">
+								<Link to="/split">Try split payments</Link>
 							</Button>
 						</div>
 					</div>
@@ -107,7 +115,7 @@ function Home() {
 									/>
 									<div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 to-transparent p-6 pt-16">
 										<p className="text-xs font-medium text-white/70">
-											{featured.badge ?? "Featured"} · {featured.origin}
+											{featured.badge ?? "Featured"} from {featured.origin}
 										</p>
 										<p className="font-display mt-1 text-2xl font-medium text-white">
 											{featured.name}
@@ -125,41 +133,65 @@ function Home() {
 				</div>
 			</section>
 
-			{/* Capability band */}
+			{/* Capability map */}
 			<section className="border-y border-border bg-muted/30">
-				<div className="mx-auto grid max-w-6xl divide-y divide-border px-4 sm:px-6 md:grid-cols-3 md:divide-x md:divide-y-0">
-					{CAPABILITIES.map((cap) => {
-						const inner = (
-							<>
-								<cap.icon className="size-5 text-primary" />
-								<h3 className="font-medium">{cap.title}</h3>
-								<p className="text-sm text-muted-foreground">{cap.copy}</p>
-								<span className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-foreground">
-									{cap.cta}
-									<ArrowRight className="size-4 transition-transform group-hover/cap:translate-x-0.5" />
-								</span>
-							</>
-						);
-						const className = "group/cap flex flex-col gap-2 px-2 py-7 md:px-8";
-						return cap.to.startsWith("#") ? (
-							<a key={cap.title} href={cap.to} className={className}>
-								{inner}
-							</a>
-						) : (
-							<Link
-								key={cap.title}
-								to={cap.to as "/split" | "/plans"}
-								className={className}
-							>
-								{inner}
-							</Link>
-						);
-					})}
+				<div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
+					<div className="max-w-2xl">
+						<h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+							Try the component end to end
+						</h2>
+						<p className="mt-2 text-muted-foreground">
+							Each route isolates one integration pattern while sharing the same
+							customer, cards and reactive payment history.
+						</p>
+					</div>
+
+					<div className="mt-8 grid grid-flow-dense grid-cols-1 gap-px overflow-hidden rounded-xl bg-border ring-1 ring-border md:grid-cols-2 lg:grid-cols-12">
+						{CAPABILITIES.map((cap) => {
+							const inner = (
+								<>
+									<span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+										<cap.icon className="size-5" />
+									</span>
+									<h3 className="font-display mt-5 text-xl font-semibold">
+										{cap.title}
+									</h3>
+									<p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
+										{cap.copy}
+									</p>
+									<span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-foreground">
+										{cap.cta}
+										<ArrowRight className="size-4 transition-transform group-hover/cap:translate-x-0.5" />
+									</span>
+								</>
+							);
+							const className = cn(
+								"group/cap flex flex-col bg-card p-6 transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset md:min-h-64 md:p-8",
+								cap.className,
+							);
+							return cap.to.startsWith("#") ? (
+								<a key={cap.title} href={cap.to} className={className}>
+									{inner}
+								</a>
+							) : (
+								<Link
+									key={cap.title}
+									to={cap.to as "/split" | "/plans"}
+									className={className}
+								>
+									{inner}
+								</Link>
+							);
+						})}
+					</div>
 				</div>
 			</section>
 
 			{/* Product grid */}
-			<section id="shop" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6">
+			<section
+				id="shop"
+				className="mx-auto max-w-7xl scroll-mt-20 px-4 py-16 sm:px-6"
+			>
 				<div className="flex flex-wrap items-end justify-between gap-4">
 					<div>
 						<h2 className="font-display text-3xl font-semibold tracking-tight">
@@ -189,7 +221,7 @@ function Home() {
 					</div>
 				</div>
 
-				<div className="mt-8 grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4">
+				<div className="mt-8 grid grid-cols-1 gap-5 min-[480px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
 					{visible
 						? visible.map((product) => (
 								<ProductCard key={product.id} product={product} />
@@ -204,7 +236,7 @@ function Home() {
 			</section>
 
 			{/* Coffee Club band */}
-			<section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
+			<section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6">
 				<div className="relative overflow-hidden rounded-2xl bg-primary px-6 py-12 text-primary-foreground sm:px-12">
 					<div className="pointer-events-none absolute -top-16 -right-10 size-64 rounded-full bg-ember/30 blur-3xl" />
 					<div className="relative max-w-xl">
