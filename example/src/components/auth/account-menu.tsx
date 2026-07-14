@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
+	DropdownMenuGroup,
 	DropdownMenuItem,
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
@@ -40,12 +41,14 @@ export function AccountMenu() {
 				</Avatar>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end" className="w-56">
-				<DropdownMenuLabel className="font-normal">
-					<span className="block text-xs text-muted-foreground">
-						Signed in as
-					</span>
-					<span className="block truncate">{email ?? "your account"}</span>
-				</DropdownMenuLabel>
+				<DropdownMenuGroup>
+					<DropdownMenuLabel className="font-normal">
+						<span className="block text-xs text-muted-foreground">
+							Signed in as
+						</span>
+						<span className="block truncate">{email ?? "your account"}</span>
+					</DropdownMenuLabel>
+				</DropdownMenuGroup>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem render={<Link to="/account" />}>
 					<Receipt />
