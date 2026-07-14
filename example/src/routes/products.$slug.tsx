@@ -47,9 +47,7 @@ function ProductPage() {
 				<p className="text-muted-foreground">
 					This product may have sold out or moved.
 				</p>
-				<Button asChild>
-					<Link to="/">Back to the roastery</Link>
-				</Button>
+				<Button render={<Link to="/" />}>Back to the roastery</Button>
 			</div>
 		);
 	}

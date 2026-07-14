@@ -175,7 +175,7 @@ function Home() {
 								</>
 							);
 							const className = cn(
-								"group/cap flex flex-col bg-card p-6 transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset md:min-h-64 md:p-8",
+								"group/cap flex flex-col bg-card p-6 transition-colors hover:bg-accent/60 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset md:min-h-64 md:p-8",
 								cap.className,
 							);
 							return cap.to.startsWith("#") ? (

@@ -77,10 +77,10 @@ export function CartSheet() {
 						<p className="text-sm text-muted-foreground">
 							Your cart is empty. Find a bag you love.
 						</p>
-						<SheetClose asChild>
-							<Button asChild variant="outline">
-								<Link to="/">Browse coffee</Link>
-							</Button>
+						<SheetClose
+							render={<Button variant="outline" render={<Link to="/" />} />}
+						>
+							Browse coffee
 						</SheetClose>
 					</div>
 				) : (

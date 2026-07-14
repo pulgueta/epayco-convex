@@ -143,8 +143,8 @@ function ActiveSubscriptionBanner({
           <strong>{tier?.name ?? "Coffee Club"}</strong> plan.
         </p>
       </div>
-      <Button asChild variant="outline" size="sm">
-        <Link to="/account">Manage</Link>
+      <Button variant="outline" size="sm" render={<Link to="/account" />}>
+        Manage
       </Button>
     </div>
   );

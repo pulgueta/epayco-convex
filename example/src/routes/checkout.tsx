@@ -129,9 +129,7 @@ function EmptyCart() {
       <p className="text-muted-foreground">
         Add a bag of coffee and come back to check out.
       </p>
-      <Button asChild>
-        <Link to="/">Browse the roastery</Link>
-      </Button>
+      <Button render={<Link to="/" />}>Browse the roastery</Button>
     </div>
   );
 }

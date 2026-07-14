@@ -27,7 +27,7 @@ export function AppProviders({
 				disableTransitionOnChange
 			>
 				<CartProvider>
-					<TooltipProvider delayDuration={150}>
+					<TooltipProvider delay={150}>
 						{children}
 						<Toaster position="top-center" closeButton richColors />
 					</TooltipProvider>

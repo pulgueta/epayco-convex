@@ -23,19 +23,21 @@ export function AccountMenu() {
 
 	return (
 		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button
-					variant="ghost"
-					size="icon"
-					className="rounded-full"
-					aria-label="Account menu"
-				>
-					<Avatar className="size-7">
-						<AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">
-							{initial}
-						</AvatarFallback>
-					</Avatar>
-				</Button>
+			<DropdownMenuTrigger
+				render={
+					<Button
+						variant="ghost"
+						size="icon"
+						className="rounded-full"
+						aria-label="Account menu"
+					/>
+				}
+			>
+				<Avatar className="size-7">
+					<AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">
+						{initial}
+					</AvatarFallback>
+				</Avatar>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end" className="w-56">
 				<DropdownMenuLabel className="font-normal">
@@ -45,17 +47,13 @@ export function AccountMenu() {
 					<span className="block truncate">{email ?? "your account"}</span>
 				</DropdownMenuLabel>
 				<DropdownMenuSeparator />
-				<DropdownMenuItem asChild>
-					<Link to="/account">
-						<Receipt />
-						Orders &amp; cards
-					</Link>
+				<DropdownMenuItem render={<Link to="/account" />}>
+					<Receipt />
+					Orders &amp; cards
 				</DropdownMenuItem>
-				<DropdownMenuItem asChild>
-					<Link to="/plans">
-						<Repeat />
-						Coffee Club
-					</Link>
+				<DropdownMenuItem render={<Link to="/plans" />}>
+					<Repeat />
+					Coffee Club
 				</DropdownMenuItem>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem

@@ -185,8 +185,8 @@ function SubscriptionPanel() {
 			) : (
 				<div className="grid gap-3 text-sm">
 					<p className="text-muted-foreground">No active subscription.</p>
-					<Button asChild size="sm" variant="outline">
-						<Link to="/plans">Browse plans</Link>
+					<Button size="sm" variant="outline" render={<Link to="/plans" />}>
+						Browse plans
 					</Button>
 				</div>
 			)}
@@ -246,8 +246,8 @@ function OrderHistoryPanel() {
 					<p className="text-sm text-muted-foreground">
 						No orders yet. Your payments will show up here in real time.
 					</p>
-					<Button asChild size="sm">
-						<Link to="/">Start shopping</Link>
+					<Button size="sm" render={<Link to="/" />}>
+						Start shopping
 					</Button>
 				</div>
 			) : (

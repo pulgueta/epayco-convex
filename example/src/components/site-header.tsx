@@ -51,8 +51,12 @@ export function SiteHeader() {
 						<AccountMenu />
 					</Authenticated>
 					<Unauthenticated>
-						<Button asChild size="sm" className="ml-1 hidden md:inline-flex">
-							<Link to="/account">Sign in</Link>
+						<Button
+							size="sm"
+							className="ml-1 hidden md:inline-flex"
+							render={<Link to="/account" />}
+						>
+							Sign in
 						</Button>
 					</Unauthenticated>
 					<MobileNavigation />
@@ -65,15 +69,17 @@ export function SiteHeader() {
 function MobileNavigation() {
 	return (
 		<Sheet>
-			<SheetTrigger asChild>
-				<Button
-					variant="ghost"
-					size="icon"
-					className="md:hidden"
-					aria-label="Open navigation"
-				>
-					<Menu />
-				</Button>
+			<SheetTrigger
+				render={
+					<Button
+						variant="ghost"
+						size="icon"
+						className="md:hidden"
+						aria-label="Open navigation"
+					/>
+				}
+			>
+				<Menu />
 			</SheetTrigger>
 			<SheetContent className="w-[min(88vw,22rem)] gap-0" side="right">
 				<SheetHeader className="border-b border-border px-5 py-5">
@@ -85,40 +91,51 @@ function MobileNavigation() {
 
 				<nav className="grid gap-1 p-3" aria-label="Mobile navigation">
 					{NAV.map((item) => (
-						<SheetClose asChild key={item.to}>
-							<Link
-								to={item.to}
-								activeOptions={{ exact: item.exact }}
-								className="rounded-lg px-3 py-3 text-base text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-								activeProps={{
-									className: "bg-muted text-foreground font-medium",
-								}}
-							>
-								{item.label}
-							</Link>
+						<SheetClose
+							key={item.to}
+							render={
+								<Link
+									to={item.to}
+									activeOptions={{ exact: item.exact }}
+									className="rounded-lg px-3 py-3 text-base text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+									activeProps={{
+										className: "bg-muted text-foreground font-medium",
+									}}
+								/>
+							}
+						>
+							{item.label}
 						</SheetClose>
 					))}
 					<Authenticated>
-						<SheetClose asChild>
-							<Link
-								to="/account"
-								className="rounded-lg px-3 py-3 text-base text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-								activeProps={{
-									className: "bg-muted text-foreground font-medium",
-								}}
-							>
-								Account
-							</Link>
+						<SheetClose
+							render={
+								<Link
+									to="/account"
+									className="rounded-lg px-3 py-3 text-base text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+									activeProps={{
+										className: "bg-muted text-foreground font-medium",
+									}}
+								/>
+							}
+						>
+							Account
 						</SheetClose>
 					</Authenticated>
 				</nav>
 
 				<Unauthenticated>
 					<div className="mt-auto border-t border-border p-4">
-						<SheetClose asChild>
-							<Button asChild size="lg" className="h-10 w-full">
-								<Link to="/account">Create account or sign in</Link>
-							</Button>
+						<SheetClose
+							render={
+								<Button
+									size="lg"
+									className="h-10 w-full"
+									render={<Link to="/account" />}
+								/>
+							}
+						>
+							Create account or sign in
 						</SheetClose>
 					</div>
 				</Unauthenticated>

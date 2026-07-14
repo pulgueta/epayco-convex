@@ -75,9 +75,7 @@ function OrderContent() {
 					Reference <code className="text-foreground">{ref}</code> isn't on your
 					account.
 				</p>
-				<Button asChild>
-					<Link to="/account">Your orders</Link>
-				</Button>
+				<Button render={<Link to="/account" />}>Your orders</Button>
 			</div>
 		);
 	}
@@ -134,12 +132,10 @@ function OrderContent() {
 			</div>
 
 			<div className="mt-6 flex flex-wrap justify-center gap-3">
-				<Button asChild variant="outline">
-					<Link to="/account">View all orders</Link>
+				<Button variant="outline" render={<Link to="/account" />}>
+					View all orders
 				</Button>
-				<Button asChild>
-					<Link to="/">Keep shopping</Link>
-				</Button>
+				<Button render={<Link to="/" />}>Keep shopping</Button>
 			</div>
 		</div>
 	);

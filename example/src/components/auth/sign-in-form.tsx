@@ -167,7 +167,10 @@ export function SignInForm({ onSuccess }: { onSuccess?: () => void }) {
 					<div className="grid gap-4 @lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
 						<div className="grid min-w-0 gap-2">
 							<Label htmlFor="authDocumentType">Document type</Label>
-							<Select value={documentType} onValueChange={setDocumentType}>
+							<Select
+								value={documentType}
+								onValueChange={(value) => setDocumentType(value ?? "")}
+							>
 								<SelectTrigger id="authDocumentType" className="w-full min-w-0">
 									<SelectValue />
 								</SelectTrigger>
